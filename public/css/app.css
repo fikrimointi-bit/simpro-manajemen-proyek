@@ -1,0 +1,301 @@
+/* ============================================================
+   SIMPRO — Design System
+   Bersih, lega, ala SaaS modern. Tanpa build step.
+   ============================================================ */
+
+/* ---------- Token warna (light) ---------- */
+:root,
+[data-bs-theme="light"] {
+    --simpro-bg: #f8fafc;
+    --simpro-surface: #ffffff;
+    --simpro-surface-2: #f1f5f9;
+    --simpro-border: #e2e8f0;
+    --simpro-text: #0f172a;
+    --simpro-muted: #64748b;
+    --simpro-primary: #4f46e5;          /* indigo-600 */
+    --simpro-primary-soft: #eef2ff;
+    --simpro-primary-hover: #4338ca;    /* indigo-700 */
+    --simpro-success: #16a34a;
+    --simpro-warning: #d97706;
+    --simpro-danger: #dc2626;
+    --simpro-radius: 12px;
+    --simpro-radius-sm: 8px;
+    --simpro-shadow: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+    --simpro-shadow-lg: 0 10px 30px rgba(15, 23, 42, .08);
+    --simpro-sidebar-w: 260px;
+    --simpro-header-h: 68px;
+}
+
+/* ---------- Token warna (dark) ---------- */
+[data-bs-theme="dark"] {
+    --simpro-bg: #0b1120;
+    --simpro-surface: #111827;
+    --simpro-surface-2: #1f2937;
+    --simpro-border: #243044;
+    --simpro-text: #e2e8f0;
+    --simpro-muted: #94a3b8;
+    --simpro-primary: #818cf8;          /* indigo-400, lebih terang di gelap */
+    --simpro-primary-soft: #1e1b4b;
+    --simpro-primary-hover: #a5b4fc;
+    --simpro-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+    --simpro-shadow-lg: 0 10px 30px rgba(0, 0, 0, .5);
+}
+
+/* ---------- Dasar ---------- */
+body {
+    background: var(--simpro-bg);
+    color: var(--simpro-text);
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: .925rem;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--simpro-primary); }
+a:hover { color: var(--simpro-primary-hover); }
+
+/* ---------- Layout: sidebar + main ---------- */
+.app-sidebar {
+    width: var(--simpro-sidebar-w);
+    background: var(--simpro-surface);
+    border-right: 1px solid var(--simpro-border);
+    padding: 1.25rem 1rem;
+}
+
+.app-sidebar .brand-simpro {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--simpro-text);
+    text-decoration: none;
+    padding: .25rem .5rem 1rem;
+}
+
+.app-sidebar .brand-simpro .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--simpro-primary);
+    color: #fff;
+    font-size: 1.05rem;
+}
+
+.app-sidebar .nav-section {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--simpro-muted);
+    padding: .75rem .75rem .35rem;
+}
+
+.app-sidebar .nav-link-simpro {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .6rem .75rem;
+    border-radius: var(--simpro-radius-sm);
+    color: var(--simpro-muted);
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: .15rem;
+    transition: background .15s ease, color .15s ease;
+}
+
+.app-sidebar .nav-link-simpro i { font-size: 1.1rem; }
+
+.app-sidebar .nav-link-simpro:hover {
+    background: var(--simpro-surface-2);
+    color: var(--simpro-text);
+}
+
+.app-sidebar .nav-link-simpro.active {
+    background: var(--simpro-primary-soft);
+    color: var(--simpro-primary);
+}
+
+/* sidebar permanen di layar besar, geser di layar kecil */
+@media (min-width: 992px) {
+    .offcanvas.offcanvas-start {
+        position: fixed;
+        transform: none;
+        visibility: visible;
+        height: 100vh;
+        width: var(--simpro-sidebar-w) !important;
+        z-index: 1030;
+    }
+    .app-main { margin-left: var(--simpro-sidebar-w); }
+}
+
+/* ---------- Header halaman ---------- */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    min-height: var(--simpro-header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: .85rem 1.5rem;
+    background: color-mix(in srgb, var(--simpro-surface) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--simpro-border);
+}
+
+.app-header h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--simpro-text);
+}
+
+.app-header .page-subtitle {
+    margin: .1rem 0 0;
+    color: var(--simpro-muted);
+    font-size: .85rem;
+}
+
+.app-content { padding: 1.5rem; max-width: 1200px; }
+
+/* ---------- Kartu ---------- */
+.card {
+    background: var(--simpro-surface);
+    border: 1px solid var(--simpro-border);
+    border-radius: var(--simpro-radius);
+    box-shadow: var(--simpro-shadow);
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--simpro-border);
+    border-radius: var(--simpro-radius) var(--simpro-radius) 0 0 !important;
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+}
+
+.card-body { padding: 1.25rem; }
+
+/* ---------- Tombol ---------- */
+.btn {
+    border-radius: var(--simpro-radius-sm);
+    font-weight: 500;
+    padding: .5rem 1rem;
+}
+
+.btn-primary {
+    background: var(--simpro-primary);
+    border-color: var(--simpro-primary);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background: var(--simpro-primary-hover);
+    border-color: var(--simpro-primary-hover);
+}
+
+.btn-outline-secondary { color: var(--simpro-muted); }
+.btn-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: var(--simpro-radius-sm);
+    color: var(--simpro-muted);
+    border: 1px solid var(--simpro-border);
+    background: var(--simpro-surface);
+}
+.btn-icon:hover { color: var(--simpro-text); background: var(--simpro-surface-2); }
+
+/* ---------- Tabel ---------- */
+.table { --bs-table-bg: transparent; color: var(--simpro-text); }
+.table > :not(caption) > * > * { padding: .9rem 1.1rem; }
+.table thead th {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--simpro-muted);
+    border-bottom: 1px solid var(--simpro-border);
+    background: var(--simpro-surface-2);
+}
+.table tbody tr { border-color: var(--simpro-border); transition: background .12s ease; }
+.table tbody tr:hover { background: var(--simpro-surface-2); }
+
+/* ---------- Form ---------- */
+.form-control, .form-select {
+    border-color: var(--simpro-border);
+    border-radius: var(--simpro-radius-sm);
+    background: var(--simpro-surface);
+    color: var(--simpro-text);
+    padding: .55rem .8rem;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--simpro-primary);
+    box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--simpro-primary) 18%, transparent);
+}
+.form-label { font-weight: 500; font-size: .875rem; margin-bottom: .4rem; }
+.form-text { color: var(--simpro-muted); font-size: .8rem; }
+.form-check-input:checked { background-color: var(--simpro-primary); border-color: var(--simpro-primary); }
+.form-control-color { padding: .25rem; }
+.invalid-feedback { font-size: .8rem; }
+
+/* ---------- Badge ---------- */
+.badge { font-weight: 500; border-radius: 999px; padding: .35em .8em; }
+.badge-libur { background: var(--simpro-primary-soft); color: var(--simpro-primary); }
+
+/* badge prioritas (kontras di light & dark) */
+.prioritas-rendah { background: #fef3c7; color: #92400e; }
+.prioritas-normal { background: #e0e7ff; color: #3730a3; }
+.prioritas-tinggi { background: #fee2e2; color: #991b1b; }
+[data-bs-theme="dark"] .prioritas-rendah { background: #78350f; color: #fde68a; }
+[data-bs-theme="dark"] .prioritas-normal { background: #312e81; color: #c7d2fe; }
+[data-bs-theme="dark"] .prioritas-tinggi { background: #7f1d1d; color: #fecaca; }
+
+/* ---------- Empty state ---------- */
+.empty-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    color: var(--simpro-muted);
+}
+.empty-state i {
+    font-size: 2.75rem;
+    color: var(--simpro-primary);
+    opacity: .8;
+}
+.empty-state h5 { color: var(--simpro-text); margin-top: .9rem; font-weight: 600; }
+.empty-state p { max-width: 420px; margin: .4rem auto 1.1rem; }
+
+/* ---------- Kartu statistik beranda ---------- */
+.stat-card .stat-ikon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--simpro-radius-sm);
+    background: var(--simpro-primary-soft);
+    color: var(--simpro-primary);
+    font-size: 1.3rem;
+}
+.stat-card .stat-nilai { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+.stat-card .stat-label { color: var(--simpro-muted); font-size: .85rem; }
+
+/* ---------- Dot warna tugas ---------- */
+.warna-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--simpro-border);
+}
+
+/* ---------- Toast & modal ---------- */
+.toast { border-radius: var(--simpro-radius-sm); }
+.modal-content { border-radius: var(--simpro-radius); border: 1px solid var(--simpro-border); }
+
+/* ---------- Utilitas ---------- */
+.text-muted-simpro { color: var(--simpro-muted) !important; }
+.bg-success { background-color: var(--simpro-success) !important; }
+.bg-danger { background-color: var(--simpro-danger) !important; }
+.bg-warning { background-color: var(--simpro-warning) !important; }
