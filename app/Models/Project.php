@@ -45,4 +45,10 @@ class Project extends Model
     {
         return $this->hasMany(Resource::class);
     }
+
+    /** Ketergantungan antar tugas proyek ini (FS/SS/FF/SF). */
+    public function dependencies(): HasMany
+    {
+        return $this->hasMany(TaskDependency::class);
+    }
 }

@@ -23,7 +23,7 @@ menampilkan tugas, dependensi, serta alokasi sumber daya pada chart Gantt.
 | `projects` | Induk. Menyimpan `weekend_days` (JSON, angka 0–6, 0 = Minggu) dan `weekend_mode` (`no_work` / `work`). |
 | `holidays` | Hari libur proyek; `is_recurring = true` berarti berulang tiap tahun (hanya bulan+tanggal yang berarti). Unique `(project_id, date)` mencegah duplikat. |
 | `tasks` | Tugas dengan `parent_id` (nullOnDelete) untuk struktur WBS/sub-tugas, plus progress, milestone, dan urutan. |
-| `task_dependencies` | Ketergantungan antar tugas ala GanttProject: `predecessor_id` → `successor_id`, tipe FS/SS/FF/SF, dan `lag_days`. |
+| `task_dependencies` | Ketergantungan antar tugas ala GanttProject: `predecessor_id` (pendahulu) → `successor_id` (tugas yang **menunggu**), tipe FS/SS/FF/SF, dan `lag_days` (= **delay**, hari kerja). Nama kolom lama dipertahankan — migration `000004` sudah lengkap, tidak ada migration tambahan. |
 | `resources` | Anggota tim dengan kapasitas (persen) dan warna untuk chart. |
 | `resource_days_off` | Cuti/sakit per anggota; perilaku rekurensi sama dengan `holidays`. |
 | `resource_task` | Pivot alokasi anggota → tugas dengan `effort` (jam/hari). |
@@ -96,12 +96,55 @@ ribuan baris.
 - **Tampilan**: tabel berjenjang dengan indentasi per level (DFS dari akar), badge
   jumlah sub-tugas, dot warna, dan badge prioritas.
 
+### Mesin penjadwalan dependensi (tahap 3A): `App\Services\SchedulerService`
+
+`scheduleProject(Project)` menjadwalkan ulang seluruh proyek dalam 4 fase:
+urutan topologis → hitung seluruh jadwal leaf (murni perhitungan, tanpa
+menulis) → tulis tanggal yang berubah (`updateQuietly`) → agregasi induk.
+Sehingga bila terjadi kegagalan, tidak ada satu pun tanggal yang tersimpan.
+
+Aturan (semua perhitungan hari kerja lewat CalendarService, tanggal inklusif):
+
+| Tipe | Aturan |
+| --- | --- |
+| FS | mulai di hari kerja **setelah** pendahulu selesai + delay |
+| SS | mulai = mulai pendahulu + delay |
+| FF | selesai = selesai pendahulu + delay, mulai dihitung mundur (durasi − 1) |
+| SF | selesai = mulai pendahulu + delay, mulai dihitung mundur (durasi − 1) |
+
+- Banyak predecessor → hitung tiap kandidat, ambil yang **paling lambat**.
+- Tanpa predecessor → pakai `start_date` tugas itu sendiri (tidak ada snapping).
+- `delay` = kolom `lag_days`; `successor_id` = tugas yang menunggu. Nama kolom
+  lama TIDAK direname (keputusan tahap 3A), jadi tidak ada migration baru.
+- **Dependensi hanya antar tugas leaf** (tanpa sub-tugas); dependensi yang
+  menyentuh tugas induk diabaikan penjadwal. Induk TIDAK pernah dijadwalkan
+  lewat dependensi — induk diagregasi dari sub-tugas (`Task::recomputeSchedule`)
+  **setelah** seluruh leaf selesai, diproses dari kedalaman terbesar ke atas.
+- Urutan pengerjaan memakai **topological sort** (algoritma Kahn). Siklus
+  (A → B → A) memicu `App\Exceptions\SchedulingException` berpesan Indonesia
+  yang dilempar **sebelum** tulisan apa pun → perubahan tidak tersimpan.
+- Pemicu jadwal ulang:
+  - `TaskController@store/update/destroy` (tugas berubah);
+  - event model `TaskDependency`: `saved`/`deleted` (dependensi berubah), dan
+    `saving` → `SchedulerService::assertNoCycle()` menolak siklus **sebelum**
+    baris masuk database;
+  - `HolidayController@store/destroy` + `ProjectController@update/updateWeekend`
+    (kalender berubah).
+- **Keputusan desain — hapus dependensi**: tanggal tugas **TETAP di posisi
+  terakhir** (ala GanttProject), tidak kembali ke `start_date` awal. Alasannya:
+  selama dependensi aktif, fase 3 selalu menulis jadwal hasil dependensi ke
+  kolom `start_date` tugas — jadi cabang "tanpa predecessor pakai start_date
+  sendiri" otomatis berarti memakai posisi terakhir. Event `deleted` **tetap**
+  memicu `scheduleProject()` agar tugas lain yang terhubung ikut dihitung ulang.
+- Domain jadwal terisolasi dari request/view: hanya `scheduleProject()` dan
+  `assertNoCycle()` yang publik; sisanya privat.
+
 ## Rencana UI bertahap
 
 1. ✅ Proyek (CRUD), pengaturan weekend, hari libur proyek.
 2. ✅ Tugas + sub-tugas (CRUD, jadwal otomatis via CalendarService, cegah loop).
 3. Sumber daya + alokasi ke tugas + hari libur anggota.
-4. Dependensi antar tugas (FS/SS/FF/SF) — skema `task_dependencies` sudah siap.
+4. Dependensi antar tugas (FS/SS/FF/SF) — ✅ logika penjadwalan selesai (tahap 3A); UI form dependensi menyusul (tahap 3B).
 5. Chart Gantt (bar per tugas, milestone, panah dependensi).
 
 ## Cara menjalankan & mengetes
@@ -111,11 +154,12 @@ php artisan migrate          # buat semua tabel termasuk upgrade tasks (000008)
 php artisan serve            # http://127.0.0.1:8000
 php artisan test --filter=CalendarServiceTest   # uji logika kalender
 php artisan test --filter=TaskManagementTest    # uji CRUD tugas & agregasi induk
+php artisan test --filter=SchedulerServiceTest  # uji mesin penjadwalan dependensi
 ```
 
 Pengujian manual lewat browser:
 
-1. Buka `http://127.0.0.1:8000` → redirect ke daftar proyek.
+1. Buka `http://127.0.0.1:8000` → beranda SIMPRO (kartu statistik + proyek terbaru).
 2. Buat proyek (mis. mulai 2026-10-05, weekend Sabtu-Minggu, mode `no_work`).
 3. Di halaman detail, tambah libur: tanggal `2026-10-15`, jenis **Sekali**, lalu
    coba tanggal sama lagi → muncul pesan "sudah digunakan".

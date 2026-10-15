@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Services\SchedulerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -10,6 +11,10 @@ use Illuminate\View\View;
 /** CRUD proyek + pengaturan weekend (dipakai halaman detail). */
 class ProjectController extends Controller
 {
+    public function __construct(private SchedulerService $scheduler)
+    {
+    }
+
     /** Daftar semua proyek. */
     public function index(): View
     {
@@ -53,6 +58,9 @@ class ProjectController extends Controller
     {
         $project->update($this->validasi($request));
 
+        // pengaturan weekend bisa berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
+
         return redirect()
             ->route('projects.show', $project)
             ->with('success', 'Proyek berhasil diperbarui.');
@@ -81,6 +89,9 @@ class ProjectController extends Controller
             'weekend_days' => array_values(array_map('intval', $data['weekend_days'] ?? [])),
             'weekend_mode' => $data['weekend_mode'],
         ]);
+
+        // kalender berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
 
         return redirect()
             ->route('projects.show', $project)

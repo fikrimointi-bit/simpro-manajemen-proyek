@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Project;
 use App\Models\Task;
 use App\Services\CalendarService;
+use App\Services\SchedulerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,8 +15,10 @@ use Illuminate\View\View;
 /** CRUD tugas bersarang di dalam proyek (projects/{project}/tasks). */
 class TaskController extends Controller
 {
-    public function __construct(private CalendarService $kalender)
-    {
+    public function __construct(
+        private CalendarService $kalender,
+        private SchedulerService $scheduler
+    ) {
     }
 
     /** Daftar tugas proyek, ditampilkan berjenjang sesuai induk-anak. */
@@ -80,6 +83,9 @@ class TaskController extends Controller
         // perbarui agregat induk (kalau ada) sampai ke puncak pohon
         ($parent ?? $task)->recomputeSchedule($this->kalender);
 
+        // tugas berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
+
         return redirect()
             ->route('projects.tasks.index', $project)
             ->with('success', $parent
@@ -136,6 +142,9 @@ class TaskController extends Controller
             $indukLama?->recomputeSchedule($this->kalender);
         }
 
+        // tugas berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
+
         return redirect()
             ->route('projects.tasks.index', $project)
             ->with('success', 'Tugas berhasil diperbarui.');
@@ -156,6 +165,9 @@ class TaskController extends Controller
         $indukId
             ? $project->tasks()->find($indukId)?->recomputeSchedule($this->kalender)
             : null;
+
+        // tugas berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
 
         return redirect()
             ->route('projects.tasks.index', $project)

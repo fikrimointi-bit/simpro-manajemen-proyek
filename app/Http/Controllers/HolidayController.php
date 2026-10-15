@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Holiday;
 use App\Models\Project;
+use App\Services\SchedulerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -11,6 +12,10 @@ use Illuminate\Validation\Rule;
 /** Kelola hari libur proyek dari halaman detail proyek. */
 class HolidayController extends Controller
 {
+    public function __construct(private SchedulerService $scheduler)
+    {
+    }
+
     /** Tambah hari libur (sekali pakai atau berulang tiap tahun). */
     public function store(Request $request, Project $project): RedirectResponse
     {
@@ -31,6 +36,9 @@ class HolidayController extends Controller
             'is_recurring' => $data['type'] === 'berulang',
         ]);
 
+        // kalender berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
+
         return redirect()
             ->route('projects.show', $project)
             ->with('success', 'Hari libur berhasil ditambahkan.');
@@ -43,6 +51,9 @@ class HolidayController extends Controller
         abort_unless($holiday->project_id === $project->id, 404);
 
         $holiday->delete();
+
+        // kalender berubah -> jadwalkan ulang seluruh proyek
+        $this->scheduler->scheduleProject($project);
 
         return redirect()
             ->route('projects.show', $project)
