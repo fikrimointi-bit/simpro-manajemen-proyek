@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 
 /** Bantuan format tanggal berbahasa Indonesia (tanpa dependensi locale). */
 class Tanggal
