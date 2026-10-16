@@ -50,6 +50,7 @@
                             <th>Mulai</th>
                             <th>Selesai</th>
                             <th class="text-end">Durasi (hari kerja)</th>
+                            <th>Predecessor</th>
                             <th>Prioritas</th>
                             <th>Warna</th>
                             <th class="text-end">Aksi</th>
@@ -61,6 +62,13 @@
                                 $task = $b['task'];
                                 $anak = $jumlahAnak->get($task->id, 0);
                                 $badge = $badgePrioritas[$task->priority] ?? $badgePrioritas['normal'];
+
+                                // format "Analisis Kebutuhan (SS+3)": pendahulu (tipe+delay hari kerja)
+                                $teksPredecessor = $task->predecessors
+                                    ->filter(fn ($d) => $d->predecessor)
+                                    ->map(fn ($d) => $d->predecessor->name
+                                        . ' (' . $d->type . ($d->lag_days >= 0 ? '+' : '') . $d->lag_days . ')')
+                                    ->implode(', ');
                             @endphp
                             <tr>
                                 <td style="padding-left: {{ 16 + $b['depth'] * 28 }}px">
@@ -76,6 +84,7 @@
                                 <td>{{ $task->start_date ? Tanggal::pendek($task->start_date) : '—' }}</td>
                                 <td>{{ $task->end_date ? Tanggal::pendek($task->end_date) : '—' }}</td>
                                 <td class="text-end">{{ $task->duration ?? '—' }}</td>
+                                <td class="text-nowrap">{{ $teksPredecessor !== '' ? $teksPredecessor : '—' }}</td>
                                 <td><span class="badge {{ $badge['class'] }}">{{ $badge['label'] }}</span></td>
                                 <td>
                                     <span class="warna-dot"

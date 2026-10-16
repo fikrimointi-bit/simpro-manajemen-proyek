@@ -54,4 +54,29 @@ class PageAccessTest extends TestCase
     {
         $this->get(route('projects.tasks.index', $this->proyek))->assertStatus(200);
     }
+
+    public function test_edit_proyek_status_200(): void
+    {
+        $this->get(route('projects.edit', $this->proyek))->assertStatus(200);
+    }
+
+    public function test_form_tugas_baru_status_200(): void
+    {
+        $this->get(route('projects.tasks.create', $this->proyek))->assertStatus(200);
+    }
+
+    public function test_form_edit_tugas_status_200(): void
+    {
+        // tugas dibuat lewat POST agar alur penuh (posisi, jadwal) ikut teruji
+        $this->post(route('projects.tasks.store', $this->proyek), [
+            'name' => 'Tugas Uji Edit',
+            'priority' => 'normal',
+            'start_date' => '2026-10-13',
+            'duration' => 2,
+        ])->assertSessionHasNoErrors();
+
+        $tugas = $this->proyek->tasks()->firstOrFail();
+
+        $this->get(route('projects.tasks.edit', [$this->proyek, $tugas]))->assertStatus(200);
+    }
 }

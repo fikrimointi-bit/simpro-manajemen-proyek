@@ -3,6 +3,15 @@
     // tugas induk (punya sub-tugas) tidak mengisi tanggal & durasi
     $isInduk = isset($task) && $task->isInduk();
     $tampilkanJadwal = ! $isInduk;
+
+    // baris predecessor: gagal validasi memakai isian lama, selain itu data tersimpan
+    $barisPred = old('predecessor_form') !== null
+        ? (old('predecessors') ?? [])
+        : $pendahuluTersimpan;
+    $barisPred = is_array($barisPred) ? $barisPred : [];
+    $adaPred = collect($barisPred)->contains(
+        fn ($b): bool => is_array($b) && ! empty($b['predecessor_id'])
+    );
 @endphp
 
 <div class="mb-3">
@@ -54,7 +63,9 @@
         <div class="col-md-6 mb-3">
             <label for="task-start" class="form-label">Tanggal Mulai</label>
             <input type="date" name="start_date" id="task-start" class="form-control @error('start_date') is-invalid @enderror"
-                   value="{{ old('start_date', isset($task) && $task->start_date ? $task->start_date->format('Y-m-d') : '') }}">
+                   value="{{ old('start_date', isset($task) && $task->start_date ? $task->start_date->format('Y-m-d') : '') }}"
+                   @disabled($adaPred)>
+            <div class="form-text {{ $adaPred ? '' : 'd-none' }}" id="catatan-predecessor">Dihitung otomatis dari predecessor</div>
             @error('start_date')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -75,6 +86,84 @@
             </div>
         </div>
     </div>
+
+    {{-- ============ Predecessor (tahap 3B): baris dinamis, tanpa reload ============ --}}
+    <div class="mb-2" id="bagian-predecessor">
+        <input type="hidden" name="predecessor_form" value="1">
+        <label class="form-label fw-semibold mb-1">Predecessor</label>
+
+        <div class="row g-2 small text-muted mb-1 d-none d-md-flex">
+            <div class="col-md-5">Tugas Pendahulu</div>
+            <div class="col-md-4">Tipe</div>
+            <div class="col-md-2">Delay (hari kerja)</div>
+            <div class="col-md-1"></div>
+        </div>
+
+        <div id="daftar-predecessor" class="d-flex flex-column gap-2">
+            @foreach ($barisPred as $index => $baris)
+                @include('tasks._baris-predecessor', ['index' => $index, 'baris' => $baris])
+            @endforeach
+        </div>
+
+        <template id="tpl-predecessor">
+            @include('tasks._baris-predecessor', ['index' => '__IDX__', 'baris' => []])
+        </template>
+
+        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="tambah-predecessor">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Predecessor
+        </button>
+        <div class="form-text">
+            Hanya tugas tanpa sub-tugas di proyek ini; delay dalam hari kerja (boleh negatif, default 0).
+            Satu baris = satu pendahulu.
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const daftar = document.getElementById('daftar-predecessor');
+            const tpl = document.getElementById('tpl-predecessor');
+            const tombolTambah = document.getElementById('tambah-predecessor');
+            let indeks = {{ count($barisPred) }};
+
+            // Nonaktifkan tanggal mulai selama ada predecessor (dihitung otomatis)
+            function sinkronTanggalMulai() {
+                const input = document.getElementById('task-start');
+                const catatan = document.getElementById('catatan-predecessor');
+                if (!input || !daftar) return;
+
+                const ada = Array.from(daftar.querySelectorAll('[data-pred-id]'))
+                    .some((sel) => sel.value !== '');
+
+                input.disabled = ada;
+                if (catatan) catatan.classList.toggle('d-none', !ada);
+            }
+
+            if (tombolTambah && daftar && tpl) {
+                tombolTambah.addEventListener('click', function () {
+                    daftar.insertAdjacentHTML(
+                        'beforeend',
+                        tpl.innerHTML.replaceAll('__IDX__', String(indeks++))
+                    );
+                    sinkronTanggalMulai();
+                });
+            }
+
+            if (daftar) {
+                daftar.addEventListener('click', function (event) {
+                    const tombol = event.target.closest('[data-hapus-predecessor]');
+                    if (!tombol) return;
+                    tombol.closest('[data-baris-predecessor]').remove();
+                    sinkronTanggalMulai();
+                });
+
+                daftar.addEventListener('change', function (event) {
+                    if (event.target.matches('[data-pred-id]')) sinkronTanggalMulai();
+                });
+            }
+
+            sinkronTanggalMulai();
+        })();
+    </script>
 @else
     <div class="alert alert-info mb-0">
         <i class="bi bi-info-circle me-1"></i>

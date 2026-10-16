@@ -139,12 +139,42 @@ Aturan (semua perhitungan hari kerja lewat CalendarService, tanggal inklusif):
 - Domain jadwal terisolasi dari request/view: hanya `scheduleProject()` dan
   `assertNoCycle()` yang publik; sisanya privat.
 
+### Antarmuka predecessor (tahap 3B)
+
+- Form tambah/edit tugas punya bagian **Predecessor** berisi baris dinamis
+  (tombol tambah/hapus baris tanpa reload, via `<template>` + JS murni).
+  Tiap baris: tugas pendahulu (hanya tugas **tanpa sub-tugas** di proyek yang
+  sama, bukan dirinya sendiri), tipe FS/SS/FF/SF dengan keterangan singkat,
+  dan delay hari kerja (default 0, boleh negatif).
+- Jika tugas punya predecessor, input **tanggal mulai dinonaktifkan** dengan
+  catatan "Dihitung otomatis dari predecessor" (state server saat render +
+  toggle JS saat baris berubah); `start_date` jadi nullable dan cukup durasi
+  yang wajib — jadwalnya ditulis `scheduleProject()` setelah dependensi tersimpan.
+- Sinkronisasi di `TaskController`: `sinkronPredecessor()` menghapus baris lama
+  lalu membuat baris baru dari isian form pada `store`/`update`; penghapusan
+  tugas membersihkan dependensinya lewat FK `cascadeOnDelete`, dan `destroy`
+  tetap memanggil `scheduleProject()` — tabel selalu menampilkan tanggal terbaru.
+- **Siklus ditolak sebagai error form** (bukan halaman error):
+  `StoreTaskRequest::validasiPredecessor()` (dipanggil `UpdateTaskRequest`
+  juga) menangkap `SchedulingException` dari `SchedulerService::assertNoCycle()`
+  lalu menambahkannya ke error validasi field `predecessors.N.predecessor_id`
+  — tampil di alert gaya desain pada layout. Saat simpan tugas baru siklus
+  mustahil (semua baris menuju tugas yang belum punya dependensi keluar),
+  jadi cek siklus hanya berjalan saat edit.
+- Baris kosong (pendahulu belum dipilih) dibuang saat `prepareForValidation()`,
+  sehingga aturan `required`/`distinct` hanya menilai baris terisi; input
+  tersembunyi `predecessor_form` membedakan GET pertama dari render ulang
+  setelah gagal validasi.
+- Tabel tugas punya kolom **Predecessor** berformat "Analisis Kebutuhan (SS+3)"
+  (`nama (tipe±lag)`), dari relasi `predecessors.predecessor` yang di-eager-load
+  di `TaskController@index`.
+
 ## Rencana UI bertahap
 
 1. ✅ Proyek (CRUD), pengaturan weekend, hari libur proyek.
 2. ✅ Tugas + sub-tugas (CRUD, jadwal otomatis via CalendarService, cegah loop).
 3. Sumber daya + alokasi ke tugas + hari libur anggota.
-4. Dependensi antar tugas (FS/SS/FF/SF) — ✅ logika penjadwalan selesai (tahap 3A); UI form dependensi menyusul (tahap 3B).
+4. Dependensi antar tugas (FS/SS/FF/SF) — ✅ selesai: logika penjadwalan (tahap 3A) + antarmuka form (tahap 3B).
 5. Chart Gantt (bar per tugas, milestone, panah dependensi).
 
 ## Cara menjalankan & mengetes
@@ -155,6 +185,8 @@ php artisan serve            # http://127.0.0.1:8000
 php artisan test --filter=CalendarServiceTest   # uji logika kalender
 php artisan test --filter=TaskManagementTest    # uji CRUD tugas & agregasi induk
 php artisan test --filter=SchedulerServiceTest  # uji mesin penjadwalan dependensi
+php artisan test --filter=TaskDependencyFormTest # uji form predecessor & penolakan siklus
+php artisan test --filter=PageAccessTest         # uji smoke semua halaman utama (200)
 ```
 
 Pengujian manual lewat browser:

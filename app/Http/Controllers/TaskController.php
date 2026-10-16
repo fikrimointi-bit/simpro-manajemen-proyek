@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskDependency;
 use App\Services\CalendarService;
 use App\Services\SchedulerService;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +25,8 @@ class TaskController extends Controller
     /** Daftar tugas proyek, ditampilkan berjenjang sesuai induk-anak. */
     public function index(Project $project): View
     {
-        $tugas = $project->tasks()->orderBy('id')->get();
+        // eager load predecessor + pendahulunya agar kolom Predecessor tanpa N+1
+        $tugas = $project->tasks()->with(['predecessors.predecessor'])->orderBy('id')->get();
 
         return view('tasks.index', [
             'project' => $project,
@@ -46,6 +48,9 @@ class TaskController extends Controller
             'project' => $project,
             'parent' => $parent,
             'tugasLain' => $project->tasks()->orderBy('id')->get(),
+            // kandidat predecessor: hanya tugas tanpa sub-tugas di proyek ini
+            'kandidatPendahulu' => $project->tasks()->whereDoesntHave('subtasks')->orderBy('id')->get(),
+            'pendahuluTersimpan' => [],
         ]);
     }
 
@@ -53,19 +58,29 @@ class TaskController extends Controller
     public function store(StoreTaskRequest $request, Project $project): RedirectResponse
     {
         $data = $request->validated();
+        $pendahuluBaru = $data['predecessors'] ?? [];
+        unset($data['predecessors']);
+
         $parent = ! empty($data['parent_id'])
             ? $project->tasks()->findOrFail($data['parent_id'])
             : null;
 
         // jadwal diisi lengkap = tugas berjadwal (anak maupun mandiri);
+        // dengan predecessor cukup durasi saja karena tanggal mulai
+        // dinonaktifkan di form dan dihitung dari pendahulu;
         // tanpa jadwal = tugas induk, tanggal & durasi menyusul dari sub-tugas
-        $berjadwal = ! empty($data['start_date']) && ! empty($data['duration']);
+        $berjadwal = (! empty($data['start_date']) || $pendahuluBaru !== [])
+            && ! empty($data['duration']);
 
         if ($parent || $berjadwal) {
-            // akhir = hari kerja terakhir (durasi - 1) dari tanggal mulai
-            $data['end_date'] = $this->kalender
-                ->addWorkingDays($project, $data['start_date'], max((int) $data['duration'] - 1, 0))
-                ->toDateString();
+            // akhir = hari kerja terakhir (durasi - 1) dari tanggal mulai;
+            // tanpa tanggal mulai (ada predecessor), start & end menyusul
+            // dari scheduleProject() setelah dependensi tersimpan
+            $data['end_date'] = ! empty($data['start_date'])
+                ? $this->kalender
+                    ->addWorkingDays($project, $data['start_date'], max((int) $data['duration'] - 1, 0))
+                    ->toDateString()
+                : null;
         } else {
             // tugas induk: tanggal & durasi menyusul dari sub-tugas
             $data['start_date'] = null;
@@ -79,6 +94,9 @@ class TaskController extends Controller
             ->count();
 
         $task = $project->tasks()->create($data);
+
+        // ganti predecessor sesuai isian form (event model menjadwalkan ulang)
+        $this->sinkronPredecessor($project, $task, $pendahuluBaru);
 
         // perbarui agregat induk (kalau ada) sampai ke puncak pohon
         ($parent ?? $task)->recomputeSchedule($this->kalender);
@@ -105,6 +123,18 @@ class TaskController extends Controller
             'project' => $project,
             'task' => $task,
             'tugasLain' => $project->tasks()->whereKeyNotIn($dilarang)->orderBy('id')->get(),
+            // kandidat predecessor: tugas tanpa sub-tugas, bukan dirinya sendiri
+            'kandidatPendahulu' => $project->tasks()
+                ->whereDoesntHave('subtasks')
+                ->whereKeyNotIn([$task->id])
+                ->orderBy('id')
+                ->get(),
+            'pendahuluTersimpan' => $task->predecessors()->orderBy('id')->get()
+                ->map(fn (TaskDependency $d): array => [
+                    'predecessor_id' => $d->predecessor_id,
+                    'type' => $d->type,
+                    'lag_days' => $d->lag_days,
+                ])->all(),
         ]);
     }
 
@@ -114,12 +144,19 @@ class TaskController extends Controller
         $this->pastikanMilik($project, $task);
 
         $data = $request->validated();
+        $pendahuluBaru = $data['predecessors'] ?? [];
+        unset($data['predecessors']);
         $indukLamaId = $task->parent_id;
 
         if ($task->isInduk()) {
             // tugas induk: tanggal & durasi selalu hasil hitungan anak
             unset($data['start_date'], $data['duration']);
             $data['end_date'] = $task->end_date;
+        } elseif ($pendahuluBaru !== [] && ! empty($data['duration'])) {
+            // ada predecessor: input tanggal mulai dinonaktifkan di form,
+            // biarkan tanggal tersimpan — scheduleProject() di bawah menulis
+            // jadwal baru hasil perhitungan pendahulu
+            unset($data['start_date']);
         } elseif (! empty($data['start_date']) && ! empty($data['duration'])) {
             // tugas berjadwal: akhir dihitung ulang dari hari kerja proyek
             $data['end_date'] = $this->kalender
@@ -133,6 +170,9 @@ class TaskController extends Controller
         }
 
         $task->update($data);
+
+        // ganti predecessor sesuai isian form (event model menjadwalkan ulang)
+        $this->sinkronPredecessor($project, $task, $pendahuluBaru);
 
         // hitung ulang agregat: induk baru, induk lama (jika pindah), dan di atasnya
         $task->recomputeSchedule($this->kalender);
@@ -174,6 +214,27 @@ class TaskController extends Controller
             ->with('success', $turunan
                 ? 'Tugas beserta '.count($turunan).' sub-tugas berhasil dihapus.'
                 : 'Tugas berhasil dihapus.');
+    }
+
+    /**
+     * Ganti seluruh predecessor tugas sesuai baris form (kosong = hapus semua).
+     *
+     * Event model TaskDependency (saved/deleted) ikut menjadwalkan ulang proyek;
+     * store/update tetap memanggil scheduleProject() di akhir, sehingga tabel
+     * selalu menampilkan tanggal terbaru setelah simpan/edit.
+     */
+    private function sinkronPredecessor(Project $project, Task $task, array $baris): void
+    {
+        $task->predecessors()->delete();
+
+        foreach ($baris as $pendahulu) {
+            $task->predecessors()->create([
+                'project_id' => $project->id,
+                'predecessor_id' => $pendahulu['predecessor_id'],
+                'type' => $pendahulu['type'],
+                'lag_days' => $pendahulu['lag_days'],
+            ]);
+        }
     }
 
     /** Tolak akses tugas yang bukan milik proyek di URL. */
