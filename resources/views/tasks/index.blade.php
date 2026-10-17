@@ -51,6 +51,7 @@
                             <th>Selesai</th>
                             <th class="text-end">Durasi (hari kerja)</th>
                             <th>Predecessor</th>
+                            <th>Penanggung Jawab</th>
                             <th>Prioritas</th>
                             <th>Warna</th>
                             <th class="text-end">Aksi</th>
@@ -85,6 +86,25 @@
                                 <td>{{ $task->end_date ? Tanggal::pendek($task->end_date) : '—' }}</td>
                                 <td class="text-end">{{ $task->duration ?? '—' }}</td>
                                 <td class="text-nowrap">{{ $teksPredecessor !== '' ? $teksPredecessor : '—' }}</td>
+                                {{-- penugasan anggota (tahap 4B): badge nama + peringatan bentrok cuti --}}
+                                <td>
+                                    @if ($task->resources->isEmpty())
+                                        <span class="text-muted-simpro">—</span>
+                                    @else
+                                        @foreach ($task->resources as $penugasan)
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle me-1">
+                                                <i class="bi bi-person-fill me-1"></i>{{ $penugasan->name }}
+                                            </span>
+                                        @endforeach
+                                    @endif
+
+                                    @foreach ($bentrokCuti[$task->id] ?? [] as $peringatan)
+                                        <div class="small text-warning mt-1" role="alert">
+                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                            Bentrok cuti: {{ $peringatan['anggota'] }} ({{ $peringatan['cuti'] }})
+                                        </div>
+                                    @endforeach
+                                </td>
                                 <td><span class="badge {{ $badge['class'] }}">{{ $badge['label'] }}</span></td>
                                 <td>
                                     <span class="warna-dot"

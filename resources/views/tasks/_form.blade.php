@@ -58,6 +58,39 @@
     </div>
 </div>
 
+{{-- ============ Penanggung Jawab (tahap 4B): multi-select anggota proyek ini ========== --}}
+@php
+    // gagal validasi memakai isian lama, selain itu penugasan tersimpan (angka string)
+    $penugasanTerpilih = array_map('strval', (array) old('resource_ids', $penugasanTersimpan));
+@endphp
+<div class="mb-3">
+    <label for="task-resources" class="form-label">Penanggung Jawab</label>
+
+    @if ($anggota->isEmpty())
+        <input type="text" class="form-control" value="Belum ada anggota di proyek ini" disabled>
+    @else
+        <select name="resource_ids[]" id="task-resources"
+                class="form-select @error('resource_ids') is-invalid @enderror" multiple size="5">
+            @foreach ($anggota as $a)
+                <option value="{{ $a->id }}"
+                    @selected(in_array((string) $a->id, $penugasanTerpilih, false))>{{ $a->name }}</option>
+            @endforeach
+        </select>
+    @endif
+
+    <div class="form-text">Pilih satu atau lebih anggota proyek ini (tahan Ctrl/⌘ untuk banyak pilihan).</div>
+    @php
+        // pesan validasi penugasan: kunci persis 'resource_ids' atau 'resource_ids.N'
+        $galatAnggota = collect($errors->getMessages())
+            ->filter(fn ($pesan, $kunci): bool => is_string($kunci) && str_starts_with($kunci, 'resource_ids'))
+            ->flatten()
+            ->first();
+    @endphp
+    @if ($galatAnggota)
+        <div class="invalid-feedback d-block">{{ $galatAnggota }}</div>
+    @endif
+</div>
+
 @if ($tampilkanJadwal)
     <div class="row">
         <div class="col-md-6 mb-3">

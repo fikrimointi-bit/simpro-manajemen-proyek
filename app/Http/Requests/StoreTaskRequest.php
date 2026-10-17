@@ -88,6 +88,13 @@ class StoreTaskRequest extends FormRequest
             ],
             'predecessors.*.type' => ['required', Rule::in(['FS', 'SS', 'FF', 'SF'])],
             'predecessors.*.lag_days' => ['required', 'integer', 'min:-3660', 'max:3660'],
+            // penugasan anggota (tahap 4B): hanya sumber daya dari proyek yang sama saja
+            'resource_ids' => ['nullable', 'array'],
+            'resource_ids.*' => [
+                'integer',
+                'distinct', // satu anggota cukup satu baris penugasan
+                Rule::exists('resources', 'id')->where('project_id', $project->id),
+            ],
         ];
     }
 
@@ -179,6 +186,8 @@ class StoreTaskRequest extends FormRequest
             'predecessors.*.predecessor_id' => 'tugas pendahulu',
             'predecessors.*.type' => 'tipe dependensi',
             'predecessors.*.lag_days' => 'delay hari kerja',
+            'resource_ids' => 'penugasan anggota',
+            'resource_ids.*' => 'penugasan anggota',
         ];
     }
 
@@ -192,6 +201,8 @@ class StoreTaskRequest extends FormRequest
             'predecessors.*.type.in' => 'Tipe dependensi harus salah satu dari FS, SS, FF, atau SF.',
             'predecessors.*.lag_days.min' => 'Delay harus antara -3660 sampai 3660 hari kerja.',
             'predecessors.*.lag_days.max' => 'Delay harus antara -3660 sampai 3660 hari kerja.',
+            'resource_ids.*.exists' => 'Anggota yang dipilih bukan bagian dari proyek ini.',
+            'resource_ids.*.distinct' => 'Anggota sama terpilih lebih dari satu kali.',
         ];
     }
 }
