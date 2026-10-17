@@ -111,22 +111,32 @@ class GanttChartTest extends TestCase
         // sama dengan induk: 15 Okt libur proyek sehingga durasi 5 hari berakhir 19 Okt
         $this->assertSame('2026-10-19', $tugas[$anak->id]['end_date']);
         $this->assertSame('#3b82f6', $tugas[$anak->id]['color']);
+        // --- nama anggota tiap tugas ---
         $this->assertSame(
             [['id' => $anggota->id, 'name' => 'Gantt Anggota', 'color' => '#22c55e']],
-            $tugas[$anak->id]['anggota']
+            $tugas[$anak->id]['anggota'],
+            'tugas berpenugasan harus memuat nama anggotanya'
         );
-        $this->assertSame([], $tugas[$anak->id - 1]['anggota'] ?? null ?: []);
+        $this->assertSame([], $tugas[$induk->id]['anggota'], 'induk tanpa penugasan');
+        $this->assertSame([], $tugas[$leafKedua->id]['anggota'], 'leaf kedua tanpa penugasan');
 
         $this->assertNull($tugas[$leafKedua->id]['parent_id']);
         $this->assertSame('Leaf Kedua', $tugas[$leafKedua->id]['nama']);
 
-        // --- dependensi ---
+        // --- dependensi: id, task_id, predecessor_id, tipe, delay ---
         $this->assertCount(1, $json['dependensi']);
         $dep = $json['dependensi'][0];
-        $this->assertSame($anak->id, $dep['predecessor_id']);
-        $this->assertSame($leafKedua->id, $dep['successor_id']);
-        $this->assertSame('FS', $dep['type']);
-        $this->assertSame(0, $dep['lag_days']);
+
+        $this->assertSame(
+            ['id', 'task_id', 'predecessor_id', 'tipe', 'delay'],
+            array_keys($dep),
+            'field dependensi harus persis id, task_id, predecessor_id, tipe, delay'
+        );
+        $this->assertIsInt($dep['id']);
+        $this->assertSame($anak->id, $dep['predecessor_id']); // pendahulu = Anak Gantt
+        $this->assertSame($leafKedua->id, $dep['task_id']);   // task_id = tugas penerus
+        $this->assertSame('FS', $dep['tipe']);
+        $this->assertSame(0, $dep['delay']);                  // delay 0 hari kerja
 
         // --- hari libur, termasuk yang berulang ---
         $libur = collect($json['hari_libur']);

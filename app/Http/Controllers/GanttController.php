@@ -53,10 +53,10 @@ class GanttController extends Controller
             ->get()
             ->map(fn (TaskDependency $d): array => [
                 'id' => $d->id,
+                'task_id' => $d->successor_id, // tugas penerus (setara "task_id" skema rencana)
                 'predecessor_id' => $d->predecessor_id,
-                'successor_id' => $d->successor_id,
-                'type' => $d->type,
-                'lag_days' => $d->lag_days,
+                'tipe' => $d->type,            // FS, SS, FF, atau SF
+                'delay' => $d->lag_days,       // jeda hari kerja (integer cast)
             ]);
 
         $hariLibur = $project->holidays()
