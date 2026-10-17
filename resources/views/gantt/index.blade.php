@@ -197,6 +197,21 @@
             svg.setAttribute('viewBox', `0 0 ${lebarTotal} ${tinggiTotal}`);
             while (svg.firstChild) svg.removeChild(svg.firstChild);
 
+            // kepala panah untuk garis dependensi
+            const defs = el('defs', {});
+            const kepalaPanah = el('marker', {
+                id: 'gantt-panah-kepala',
+                markerUnits: 'userSpaceOnUse',
+                markerWidth: 7,
+                markerHeight: 7,
+                refX: 6,
+                refY: 3,
+                orient: 'auto',
+            });
+            kepalaPanah.appendChild(el('path', { d: 'M0,0 L6,3 L0,6 Z', class: 'gantt-panah-kepala' }));
+            defs.appendChild(kepalaPanah);
+            svg.appendChild(defs);
+
             // latar dasar
             svg.appendChild(el('rect', { x: 0, y: 0, width: lebarTotal, height: tinggiTotal, class: 'gantt-bg' }));
 
@@ -273,6 +288,7 @@
             }));
 
             // batang tugas (induk = batang ringkasan lebih tipis)
+            const posisiBatang = new Map(); // id → ujung kiri/kanan + y tengah baris
             baris.forEach((baris_, i) => {
                 const t = baris_.tugas;
                 if (!t.start_date || !t.end_date) return;
@@ -292,11 +308,39 @@
                 batang.style.fill = t.color || 'var(--simpro-primary)';
                 grup.appendChild(batang);
 
+                posisiBatang.set(t.id, {
+                    kiri: x1 + 2,
+                    kanan: x1 + 2 + lebar,
+                    y: TINGGI_KEPALA + i * TINGGI_BARIS + TINGGI_BARIS / 2,
+                });
+
                 const orang = (t.anggota || []).map((a) => a.name).join(', ');
                 grup.appendChild(el('title', {},
                     t.nama + '\n' + t.start_date + ' s/d ' + t.end_date
                     + (orang ? '\nAnggota: ' + orang : '')));
                 svg.appendChild(grup);
+            });
+
+            // panah dependensi siku antar batang yang hanya terlihat di timeline:
+            // FS: ujung kanan pendahulu → ujung kiri tugas | SS: kiri → kiri
+            // FF: kanan → kanan                            | SF: kiri pendahulu → kanan tugas
+            (data.dependensi || []).forEach((dep) => {
+                if (dep.predecessor_id === dep.task_id) return; // abaikan panah ke diri sendiri
+
+                const p = posisiBatang.get(dep.predecessor_id);
+                const s = posisiBatang.get(dep.task_id);
+                if (!p || !s) return; // tanpa batang (tak tampil) → tanpa panah
+
+                const tipe = String(dep.tipe || 'FS').toUpperCase();
+                const xP = (tipe === 'SS' || tipe === 'SF') ? p.kiri : p.kanan;
+                const xS = (tipe === 'FS' || tipe === 'SS') ? s.kiri : s.kanan;
+                const siku = Math.round((xP + xS) / 2); // titik belok di tengah
+
+                svg.appendChild(el('path', {
+                    d: 'M ' + xP + ' ' + p.y + ' H ' + siku + ' V ' + s.y + ' H ' + xS,
+                    class: 'gantt-panah',
+                    'marker-end': 'url(#gantt-panah-kepala)',
+                }));
             });
 
             // garis vertikal "hari ini"

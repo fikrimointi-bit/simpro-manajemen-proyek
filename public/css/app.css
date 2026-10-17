@@ -351,6 +351,10 @@ a:hover { color: var(--simpro-primary-hover); }
 .gantt-hari-ini line { stroke: var(--simpro-danger); stroke-width: 2; }
 .gantt-label-hari-ini { fill: var(--simpro-danger); font-size: 10px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
 
+/* panah dependensi siku + kepala panah (tahap 5B) — warna dari token, ikut mode gelap */
+.gantt-panah { fill: none; stroke: var(--simpro-muted); stroke-width: 1.5; }
+.gantt-panah-kepala { fill: var(--simpro-muted); }
+
 /* legenda Gantt */
 .gantt-legenda-swatch {
     display: inline-block; width: 14px; height: 14px;
