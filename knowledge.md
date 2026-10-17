@@ -169,11 +169,38 @@ Aturan (semua perhitungan hari kerja lewat CalendarService, tanggal inklusif):
   (`nama (tipe±lag)`), dari relasi `predecessors.predecessor` yang di-eager-load
   di `TaskController@index`.
 
+### Sumber daya / anggota tim (tahap 4A)
+
+- Migration `2026_10_14_000009_upgrade_resources_for_crud.php` menambah kolom
+  yang kurang dari skema Tahap 1: `resources` → `phone`, `salary`
+  (unsignedBigInteger, Rupiah/bulan), `custom_fields` (JSON);
+  `resource_days_off` → `end_date` (batas akhir cuti, nullable).
+  Nama kolom lama (`date` = hari "dari") tidak diubah — keputusan yang sama
+  seperti tahap 3A.
+- **Data kustom**: pasangan `label` → `value` per anggota, disimpan sebagai
+  JSON pada kolom `custom_fields` (cast `array`), ditampilkan sebagai tabel
+  di halaman detail anggota. Form memakai baris dinamis (`<template>` + JS
+  murni, pola sama dengan predecessor); baris yang kosong total dibuang saat
+  `validasi()`, label wajib terisi dan `distinct` (tidak boleh dobel).
+- **Cuti pribadi berrentang**: `date` (dari) + `end_date` (sampai) + keterangan,
+  divalidasi `after_or_equal:date` dan unik per anggota (`Rule::unique` meniru
+  constraint `(resource_id, date)` agar tidak 500). Ditambah/dihapus dari
+  halaman detail anggota.
+- **Hapus anggota** membersihkan cuti (`daysOff()->delete()`) dan penugasan
+  (`tasks()->detach()`) secara eksplisit di controller — FK `cascadeOnDelete`
+  tetap jadi lapis pengaman kedua. Tugas tidak ikut terhapus.
+- Menu **sidebar** "Sumber Daya" menampilkan satu tautan per proyek,
+  di-share ke semua halaman lewat `View::composer('layouts.app', ...)` di
+  `AppServiceProvider`.
+- Gaji ditampilkan terformat Rupiah (`Rp 3.500.000`) di tabel & detail;
+  `SchedulerService`/`CalendarService` tidak disentuh — cuti anggota belum
+  memengaruhi penjadwalan (alokasi ke tugas menyusul).
+
 ## Rencana UI bertahap
 
 1. ✅ Proyek (CRUD), pengaturan weekend, hari libur proyek.
 2. ✅ Tugas + sub-tugas (CRUD, jadwal otomatis via CalendarService, cegah loop).
-3. Sumber daya + alokasi ke tugas + hari libur anggota.
+3. ✅ Sumber daya — selesai tahap 4A (CRUD anggota, data kustom JSON, cuti berrentang); alokasi ke tugas menyusul.
 4. Dependensi antar tugas (FS/SS/FF/SF) — ✅ selesai: logika penjadwalan (tahap 3A) + antarmuka form (tahap 3B).
 5. Chart Gantt (bar per tugas, milestone, panah dependensi).
 
@@ -186,6 +213,7 @@ php artisan test --filter=CalendarServiceTest   # uji logika kalender
 php artisan test --filter=TaskManagementTest    # uji CRUD tugas & agregasi induk
 php artisan test --filter=SchedulerServiceTest  # uji mesin penjadwalan dependensi
 php artisan test --filter=TaskDependencyFormTest # uji form predecessor & penolakan siklus
+php artisan test --filter=ResourceManagementTest # uji CRUD anggota, cuti & hapus berantai
 php artisan test --filter=PageAccessTest         # uji smoke semua halaman utama (200)
 ```
 

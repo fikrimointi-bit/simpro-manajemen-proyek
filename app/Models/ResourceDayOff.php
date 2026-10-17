@@ -15,6 +15,7 @@ class ResourceDayOff extends Model
         'project_id',
         'resource_id',
         'date',
+        'end_date',
         'description',
         'is_recurring',
     ];
@@ -23,6 +24,8 @@ class ResourceDayOff extends Model
     {
         return [
             'date' => 'date',
+            // batas akhir cuti berrentang (date = dari, end_date = sampai)
+            'end_date' => 'date',
             'is_recurring' => 'bool',
         ];
     }

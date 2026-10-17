@@ -13,8 +13,11 @@ class Resource extends Model
     protected $fillable = [
         'project_id',
         'name',
+        'phone',
         'email',
         'role',
+        'salary',
+        'custom_fields',
         'capacity',
         'color',
     ];
@@ -23,6 +26,9 @@ class Resource extends Model
     {
         return [
             'capacity' => 'float',
+            'salary' => 'integer',
+            // pasangan nama kolom => nilai per anggota, disimpan sebagai JSON
+            'custom_fields' => 'array',
         ];
     }
 

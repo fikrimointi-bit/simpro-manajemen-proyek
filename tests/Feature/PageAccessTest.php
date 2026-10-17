@@ -79,4 +79,9 @@ class PageAccessTest extends TestCase
 
         $this->get(route('projects.tasks.edit', [$this->proyek, $tugas]))->assertStatus(200);
     }
+
+    public function test_halaman_sumber_daya_status_200(): void
+    {
+        $this->get(route('projects.resources.index', $this->proyek))->assertStatus(200);
+    }
 }

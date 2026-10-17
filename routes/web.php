@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,3 +27,13 @@ Route::delete('/projects/{project}/holidays/{holiday}', [HolidayController::clas
 Route::resource('projects.tasks', TaskController::class)
     ->parameters(['projects' => 'project', 'tasks' => 'task'])
     ->except('show');
+
+// sumber daya (anggota tim) per proyek — tahap 4A; show = detail anggota
+Route::resource('projects.resources', ResourceController::class)
+    ->parameters(['projects' => 'project', 'resources' => 'resource']);
+
+// cuti pribadi per anggota dari halaman detail anggota
+Route::post('/projects/{project}/resources/{resource}/days-off', [ResourceController::class, 'storeDayOff'])
+    ->name('resource-days-off.store');
+Route::delete('/projects/{project}/resources/{resource}/days-off/{dayOff}', [ResourceController::class, 'destroyDayOff'])
+    ->name('resource-days-off.destroy');

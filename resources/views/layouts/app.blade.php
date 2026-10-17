@@ -50,6 +50,19 @@
                href="{{ route('projects.create') }}">
                 <i class="bi bi-plus-square"></i> Tambah Proyek
             </a>
+
+            {{-- Sub-menu Sumber Daya: satu tautan per proyek (tahap 4A) --}}
+            <div class="nav-section">Sumber Daya</div>
+            @if (($menuSumberDaya ?? collect())->isEmpty())
+                <div class="px-3 small text-muted-simpro">Belum ada proyek</div>
+            @else
+                @foreach ($menuSumberDaya as $proyekSumberDaya)
+                    <a class="nav-link-simpro @if (request()->routeIs('projects.resources.*') && request()->route('project')?->id === $proyekSumberDaya->id) active @endif"
+                       href="{{ route('projects.resources.index', $proyekSumberDaya) }}">
+                        <i class="bi bi-people"></i> {{ $proyekSumberDaya->name }}
+                    </a>
+                @endforeach
+            @endif
         </nav>
 
         <div class="position-absolute bottom-0 start-0 end-0 px-4 py-3 text-muted-simpro small border-top">
