@@ -103,6 +103,9 @@
         function selisihHari(a, b) {
             return Math.round((b - a) / 86400000);
         }
+        function potong(teks, maks) {
+            return teks.length > maks ? teks.slice(0, Math.max(maks - 1, 0)) + '…' : teks;
+        }
         function el(tag, attr, teks) {
             const node = document.createElementNS(SVG_NS, tag);
             Object.keys(attr || {}).forEach((k) => node.setAttribute(k, attr[k]));
@@ -313,6 +316,28 @@
                     kanan: x1 + 2 + lebar,
                     y: TINGGI_KEPALA + i * TINGGI_BARIS + TINGGI_BARIS / 2,
                 });
+
+                // nama anggota singkat di samping kanan batang — tugas induk tanpa label;
+                // digambar di dalam grup batang (sebelum panah, z-order lebih bawah) sehingga
+                // tidak menimpa panah, dgn jarak 6px dari batang sendiri dan dipotong agar
+                // tidak melewati tepi timeline
+                const daftarAnggota = t.anggota || [];
+                if (!induk && daftarAnggota.length) {
+                    const depan = (nama) => String(nama).trim().split(/\s+/)[0];
+                    const singkat = daftarAnggota.length > 2
+                        ? depan(daftarAnggota[0].name) + ' +' + (daftarAnggota.length - 1)
+                        : daftarAnggota.map((a) => depan(a.name)).join(', ');
+                    const xLabel = x1 + 2 + lebar + 6;
+                    const ruang = lebarTotal - xLabel - 4; // sisa ruang s/d tepi timeline
+                    const maksHuruf = Math.floor(ruang / 6); // lebar huruf rata2 ~6px @10px
+                    if (ruang >= 12 && maksHuruf >= 1) {
+                        grup.appendChild(el('text', {
+                            x: xLabel,
+                            y: y + tinggiBatang / 2 + 3.5,
+                            class: 'gantt-label-anggota',
+                        }, potong(singkat, maksHuruf)));
+                    }
+                }
 
                 const orang = (t.anggota || []).map((a) => a.name).join(', ');
                 grup.appendChild(el('title', {},

@@ -355,6 +355,13 @@ a:hover { color: var(--simpro-primary-hover); }
 .gantt-panah { fill: none; stroke: var(--simpro-muted); stroke-width: 1.5; }
 .gantt-panah-kepala { fill: var(--simpro-muted); }
 
+/* label nama anggota di samping kanan batang (tahap 5B) — token warna, ikut mode gelap */
+.gantt-label-anggota {
+    fill: var(--simpro-muted);
+    font-size: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
 /* legenda Gantt */
 .gantt-legenda-swatch {
     display: inline-block; width: 14px; height: 14px;
