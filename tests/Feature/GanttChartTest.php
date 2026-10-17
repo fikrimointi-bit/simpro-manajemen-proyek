@@ -100,13 +100,16 @@ class GanttChartTest extends TestCase
         $this->assertSame('Induk Gantt', $tugas[$induk->id]['nama']);
         $this->assertNull($tugas[$induk->id]['parent_id']);
         $this->assertSame('2026-10-12', $tugas[$induk->id]['start_date']);
-        $this->assertSame('2026-10-16', $tugas[$induk->id]['end_date']);
+        // anak: 5 hari kerja sejak 12 Okt; 15 Okt libur "Hari Adat" + weekend 17-18 Okt
+        // dilewati, sehingga hari kerja ke-5 jatuh pada 19 Okt (induk = agregat anak)
+        $this->assertSame('2026-10-19', $tugas[$induk->id]['end_date']);
         $this->assertSame('#8b5cf6', $tugas[$induk->id]['color']);
 
         $this->assertSame('Anak Gantt', $tugas[$anak->id]['nama']);
         $this->assertSame($induk->id, $tugas[$anak->id]['parent_id']);
         $this->assertSame('2026-10-12', $tugas[$anak->id]['start_date']);
-        $this->assertSame('2026-10-16', $tugas[$anak->id]['end_date']);
+        // sama dengan induk: 15 Okt libur proyek sehingga durasi 5 hari berakhir 19 Okt
+        $this->assertSame('2026-10-19', $tugas[$anak->id]['end_date']);
         $this->assertSame('#3b82f6', $tugas[$anak->id]['color']);
         $this->assertSame(
             [['id' => $anggota->id, 'name' => 'Gantt Anggota', 'color' => '#22c55e']],
