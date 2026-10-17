@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GanttController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ResourceController;
@@ -37,3 +38,9 @@ Route::post('/projects/{project}/resources/{resource}/days-off', [ResourceContro
     ->name('resource-days-off.store');
 Route::delete('/projects/{project}/resources/{resource}/days-off/{dayOff}', [ResourceController::class, 'destroyDayOff'])
     ->name('resource-days-off.destroy');
+
+// Chart Gantt dasar (tahap 5A): halaman + endpoint JSON-nya
+Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])
+    ->name('projects.gantt.index');
+Route::get('/projects/{project}/gantt/data', [GanttController::class, 'data'])
+    ->name('projects.gantt.data');

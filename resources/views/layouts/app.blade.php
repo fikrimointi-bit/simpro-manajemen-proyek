@@ -63,6 +63,19 @@
                     </a>
                 @endforeach
             @endif
+
+            {{-- Sub-menu Gantt Chart: satu tautan per proyek (seperti Sumber Daya, tahap 5A) --}}
+            <div class="nav-section">Gantt Chart</div>
+            @if (($menuGantt ?? collect())->isEmpty())
+                <div class="px-3 small text-muted-simpro">Belum ada proyek</div>
+            @else
+                @foreach ($menuGantt as $proyekGantt)
+                    <a class="nav-link-simpro @if (request()->routeIs('projects.gantt.*') && request()->route('project')?->id === $proyekGantt->id) active @endif"
+                       href="{{ route('projects.gantt.index', $proyekGantt) }}">
+                        <i class="bi bi-bar-chart-steps"></i> {{ $proyekGantt->name }}
+                    </a>
+                @endforeach
+            @endif
         </nav>
 
         <div class="position-absolute bottom-0 start-0 end-0 px-4 py-3 text-muted-simpro small border-top">

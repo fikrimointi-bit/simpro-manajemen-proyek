@@ -294,6 +294,78 @@ a:hover { color: var(--simpro-primary-hover); }
 .toast { border-radius: var(--simpro-radius-sm); }
 .modal-content { border-radius: var(--simpro-radius); border: 1px solid var(--simpro-border); }
 
+/* ---------- Chart Gantt (tahap 5A) ---------- */
+.gantt-kotak { display: flex; align-items: stretch; }
+.gantt-kiri {
+    flex: 0 0 280px;
+    min-width: 280px;
+    border-right: 1px solid var(--simpro-border);
+    overflow: hidden;
+}
+.gantt-kepala {
+    height: 44px;                 /* disamakan dgn tinggi header SVG */
+    display: flex;
+    align-items: center;
+    padding: 0 .9rem;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--simpro-muted);
+    background: var(--simpro-surface-2);
+    border-bottom: 1px solid var(--simpro-border);
+}
+.gantt-baris {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    height: 30px;                 /* disamakan dgn tinggi baris SVG */
+    padding: 0 .9rem;
+    border-bottom: 1px solid var(--simpro-border);
+    font-size: .85rem;
+    color: var(--simpro-text);
+    overflow: hidden;
+}
+.gantt-baris.gantt-induk { font-weight: 600; }
+.gantt-dot { flex: 0 0 12px; width: 12px; height: 12px; }
+.gantt-nama { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gantt-anggota {
+    font-size: .72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: auto;
+    padding-left: .5rem;
+}
+.gantt-scroll { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+.gantt-scroll svg { display: block; }
+
+/* warna elemen SVG memakai token desain (otomatis ikut mode gelap) */
+.gantt-bg { fill: var(--simpro-surface); }
+.gantt-libur { fill: var(--simpro-surface-2); }
+.gantt-grid { stroke: var(--simpro-border); stroke-width: 1; }
+.gantt-batas-kepala { stroke: var(--simpro-border); stroke-width: 2; }
+.gantt-teks { fill: var(--simpro-muted); font-size: 9px; font-family: 'Inter', system-ui, sans-serif; }
+.gantt-bulan { fill: var(--simpro-text); font-size: 11px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
+.gantt-batang rect { fill: var(--simpro-primary); }
+.gantt-hari-ini line { stroke: var(--simpro-danger); stroke-width: 2; }
+.gantt-label-hari-ini { fill: var(--simpro-danger); font-size: 10px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
+
+/* legenda Gantt */
+.gantt-legenda-swatch {
+    display: inline-block; width: 14px; height: 14px;
+    border-radius: 4px; vertical-align: -2px; margin-right: .35rem;
+    background: var(--simpro-surface-2); border: 1px solid var(--simpro-border);
+}
+.gantt-legenda-garis {
+    display: inline-block; width: 3px; height: 14px;
+    background: var(--simpro-danger); vertical-align: -2px; margin-right: .35rem;
+}
+.gantt-legenda-ringkas {
+    display: inline-block; width: 22px; height: 6px;
+    border-radius: 3px; background: var(--simpro-primary); vertical-align: 1px; margin-right: .35rem;
+}
+
 /* ---------- Utilitas ---------- */
 .text-muted-simpro { color: var(--simpro-muted) !important; }
 .bg-success { background-color: var(--simpro-success) !important; }

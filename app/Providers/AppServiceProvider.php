@@ -25,9 +25,14 @@ class AppServiceProvider extends ServiceProvider
         // (menang juga kalau di .env tertulis APP_LOCALE=en)
         $this->app->setLocale('id');
 
-        // menu sidebar "Sumber Daya": satu tautan per proyek (tahap 4A)
+        // submenu sidebar per proyek: "Sumber Daya" (tahap 4A) & "Gantt Chart" (5A)
         View::composer('layouts.app', function ($view): void {
-            $view->with('menuSumberDaya', Project::orderBy('name')->get(['id', 'name']));
+            $proyekMenu = Project::orderBy('name')->get(['id', 'name']);
+
+            $view->with([
+                'menuSumberDaya' => $proyekMenu,
+                'menuGantt' => $proyekMenu,
+            ]);
         });
     }
 }
