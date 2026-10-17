@@ -38,15 +38,20 @@
             <p class="mb-0">Mengambil tugas, dependensi, dan kalender kerja proyek.</p>
         </div>
 
-        {{-- kotak chart: daftar tugas (kiri) + timeline scroll (kanan) --}}
+        {{-- kotak chart: daftar tugas (kiri) + header tanggal sticky & timeline scroll (kanan) --}}
         <div id="gantt-kotak" class="gantt-kotak d-none">
             <div class="gantt-kiri">
                 <div class="gantt-kepala">Daftar Tugas</div>
                 <div id="gantt-daftar"></div>
             </div>
-            <div class="gantt-scroll" id="gantt-scroll">
-                <svg id="gantt-svg" xmlns="http://www.w3.org/2000/svg"
-                     role="img" aria-label="Timeline tugas"></svg>
+            <div class="gantt-kanan">
+                <div class="gantt-kepala gantt-kepala-kanan" id="gantt-kepala-kanan">
+                    <svg id="gantt-kepala-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+                </div>
+                <div class="gantt-scroll" id="gantt-scroll">
+                    <svg id="gantt-svg" xmlns="http://www.w3.org/2000/svg"
+                         role="img" aria-label="Timeline tugas"></svg>
+                </div>
             </div>
         </div>
 
@@ -70,12 +75,12 @@
         </div>
     </div>
 
-    {{-- ============ Chart Gantt: SVG + JavaScript biasa, tanpa library (tahap 5A) ============ --}}
+    {{-- ============ Chart Gantt: SVG + JavaScript biasa, tanpa library (tahap 5A/5B) ============ --}}
     <script>
     (function () {
         const URL_DATA = @js(route('projects.gantt.data', $project));
         const SVG_NS = 'http://www.w3.org/2000/svg';
-        const TINGGI_KEPALA = 44;   // baris bulan (20px) + baris tanggal (24px)
+        const TINGGI_KEPALA = 44;   // baris bulan (20px) + baris tanggal (24px) — SVG header terpisah
         const TINGGI_BARIS = 30;    // tinggi satu baris tugas (sama dgn CSS)
         const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -89,6 +94,9 @@
         const kotak = document.getElementById('gantt-kotak');
         const daftar = document.getElementById('gantt-daftar');
         const svg = document.getElementById('gantt-svg');
+        const kepalaKanan = document.getElementById('gantt-kepala-kanan');
+        const kepalaSvg = document.getElementById('gantt-kepala-svg');
+        const ganttScroll = document.getElementById('gantt-scroll');
 
         // ---------- util tanggal (lokal, tanpa library) ----------
         function parseTanggal(str) {
@@ -105,6 +113,9 @@
         }
         function potong(teks, maks) {
             return teks.length > maks ? teks.slice(0, Math.max(maks - 1, 0)) + '…' : teks;
+        }
+        function kunciTanggal(tgl) {
+            return `${tgl.getFullYear()}-${String(tgl.getMonth() + 1).padStart(2, '0')}-${String(tgl.getDate()).padStart(2, '0')}`;
         }
         function el(tag, attr, teks) {
             const node = document.createElementNS(SVG_NS, tag);
@@ -144,6 +155,114 @@
             return { baris, punyaAnak };
         }
 
+        // ---------- header bulan + tanggal: SVG terpisah agar menempel saat scroll vertikal ----------
+        function gambarKepala(o) {
+            kepalaSvg.setAttribute('width', o.lebarTotal);
+            kepalaSvg.setAttribute('height', TINGGI_KEPALA);
+            kepalaSvg.setAttribute('viewBox', `0 0 ${o.lebarTotal} ${TINGGI_KEPALA}`);
+            while (kepalaSvg.firstChild) kepalaSvg.removeChild(kepalaSvg.firstChild);
+
+            kepalaSvg.appendChild(el('rect', {
+                x: 0, y: 0, width: o.lebarTotal, height: TINGGI_KEPALA, class: 'gantt-bg',
+            }));
+
+            // kolom weekend & hari libur (lanjutan kolom di body agar sejajar)
+            for (let i = 0; i < o.totalHari; i++) {
+                const tgl = tambahHari(o.mulai, i);
+                const akhirPekan = o.weekendAktif && o.setWeekend.has(tgl.getDay());
+                if (akhirPekan || o.setLibur.has(kunciTanggal(tgl))) {
+                    kepalaSvg.appendChild(el('rect', {
+                        x: i * lebarHari, y: 0,
+                        width: lebarHari, height: TINGGI_KEPALA,
+                        class: 'gantt-libur',
+                    }));
+                }
+            }
+
+            // garis kisi vertikal (per hari)
+            for (let i = 1; i < o.totalHari; i++) {
+                kepalaSvg.appendChild(el('line', {
+                    x1: i * lebarHari, x2: i * lebarHari,
+                    y1: 0, y2: TINGGI_KEPALA, class: 'gantt-grid',
+                }));
+            }
+
+            // baris bulan: label + batas segmen; kotak teks disimpan utk cek label "Hari ini"
+            const kotakBulan = [];
+            let indeksBulan = 0;
+            let kursor = new Date(o.mulai.getFullYear(), o.mulai.getMonth(), 1);
+            while (kursor <= o.selesai) {
+                const bulanBerikut = new Date(kursor.getFullYear(), kursor.getMonth() + 1, 1);
+                const awal = kursor < o.mulai ? o.mulai : kursor;
+                const x = selisihHari(o.mulai, awal) * lebarHari;
+                const akhirSegmen = bulanBerikut > o.selesai ? tambahHari(o.selesai, 1) : bulanBerikut;
+                const lebarSegmen = selisihHari(awal, akhirSegmen) * lebarHari;
+
+                const label = NAMA_BULAN[kursor.getMonth()]
+                    + (indeksBulan === 0 ? ' ' + kursor.getFullYear() : '');
+                if (lebarSegmen > 26) {
+                    kepalaSvg.appendChild(el('text', { x: x + 6, y: 15, class: 'gantt-bulan' }, label));
+                    // perkiraan lebar teks bulan ~7px/huruf @ font 11px semi-bold
+                    kotakBulan.push({ kiri: x + 6, kanan: x + 6 + label.length * 7 });
+                }
+                if (x > 0) {
+                    kepalaSvg.appendChild(el('line', {
+                        x1: x, x2: x, y1: 0, y2: TINGGI_KEPALA, class: 'gantt-grid',
+                    }));
+                }
+
+                kursor = bulanBerikut;
+                indeksBulan++;
+            }
+
+            // baris tanggal (mode hari = tiap hari; mode minggu = tiap Senin)
+            for (let i = 0; i < o.totalHari; i++) {
+                const tgl = tambahHari(o.mulai, i);
+                if (lebarHari < 24 && tgl.getDay() !== 1) continue;
+                kepalaSvg.appendChild(el('text', {
+                    x: i * lebarHari + lebarHari / 2,
+                    y: TINGGI_KEPALA - 7,
+                    class: 'gantt-teks',
+                    'text-anchor': 'middle',
+                }, String(tgl.getDate())));
+            }
+
+            // garis merah "hari ini" — labelnya digeser agar tidak menimpa teks lain:
+            // coba dulu di kanan garis, bila berhimpitan dgn label bulan coba di kiri garis,
+            // bila tetap berhimpitan / keluar tepi, label disembunyikan (garis tetap tampil)
+            const idxHariIni = selisihHari(o.mulai, o.hariIni);
+            if (idxHariIni >= 0 && idxHariIni < o.totalHari) {
+                const x = idxHariIni * lebarHari + lebarHari / 2;
+                const grup = el('g', { class: 'gantt-hari-ini' });
+                grup.appendChild(el('line', { x1: x, x2: x, y1: 0, y2: TINGGI_KEPALA }));
+
+                const LEBAR_LABEL = 'Hari ini'.length * 6; // ~48px @ font 10px
+                const JEDA = 6;                            // jarak aman antar teks
+                const berhimpitan = (kiri, kanan) => kotakBulan.some(
+                    (b) => kiri - JEDA < b.kanan && kanan + JEDA > b.kiri
+                );
+                const kandidat = [
+                    { x: x + 5, anchor: 'start', kiri: x + 5, kanan: x + 5 + LEBAR_LABEL },
+                    { x: x - 5, anchor: 'end', kiri: x - 5 - LEBAR_LABEL, kanan: x - 5 },
+                ];
+                const cocok = kandidat.find((k) =>
+                    k.kiri >= 2 && k.kanan <= o.lebarTotal - 2 && !berhimpitan(k.kiri, k.kanan)
+                );
+                if (cocok) {
+                    grup.appendChild(el('text', {
+                        x: cocok.x,
+                        y: 13,
+                        class: 'gantt-label-hari-ini',
+                        'text-anchor': cocok.anchor,
+                    }, 'Hari ini'));
+                }
+                kepalaSvg.appendChild(grup);
+            }
+
+            // selalu sejajar dgn posisi scroll horizontal timeline
+            kepalaKanan.scrollLeft = ganttScroll.scrollLeft;
+        }
+
         // ---------- render utama ----------
         function gambar() {
             if (!muat) return;
@@ -178,7 +297,7 @@
 
             const totalHari = selisihHari(mulai, selesai) + 1;
             const lebarTotal = totalHari * lebarHari;
-            const tinggiTotal = TINGGI_KEPALA + baris.length * TINGGI_BARIS;
+            const tinggiTotal = baris.length * TINGGI_BARIS; // baris saja — header di SVG terpisah
 
             // hari libur dalam rentang: berulang dicocokkan bulan + tanggal saja
             const setLibur = new Set();
@@ -188,10 +307,10 @@
                     const d = parseTanggal(h.date);
                     return h.is_recurring
                         ? d.getMonth() === tgl.getMonth() && d.getDate() === tgl.getDate()
-                        : h.date === `${tgl.getFullYear()}-${String(tgl.getMonth() + 1).padStart(2, '0')}-${String(tgl.getDate()).padStart(2, '0')}`;
+                        : h.date === kunciTanggal(tgl);
                 });
                 if (daftarCocok.length) {
-                    setLibur.add(`${tgl.getFullYear()}-${String(tgl.getMonth() + 1).padStart(2, '0')}-${String(tgl.getDate()).padStart(2, '0')}`);
+                    setLibur.add(kunciTanggal(tgl));
                 }
             }
 
@@ -221,9 +340,8 @@
             // kolom weekend & hari libur berlatar abu-abu (sepanjang tinggi chart)
             for (let i = 0; i < totalHari; i++) {
                 const tgl = tambahHari(mulai, i);
-                const kunci = `${tgl.getFullYear()}-${String(tgl.getMonth() + 1).padStart(2, '0')}-${String(tgl.getDate()).padStart(2, '0')}`;
                 const akhirPekan = weekendAktif && setWeekend.has(tgl.getDay());
-                if (akhirPekan || setLibur.has(kunci)) {
+                if (akhirPekan || setLibur.has(kunciTanggal(tgl))) {
                     svg.appendChild(el('rect', {
                         x: i * lebarHari, y: 0,
                         width: lebarHari, height: tinggiTotal,
@@ -236,62 +354,20 @@
             for (let i = 1; i < totalHari; i++) {
                 svg.appendChild(el('line', {
                     x1: i * lebarHari, x2: i * lebarHari,
-                    y1: TINGGI_KEPALA, y2: tinggiTotal,
+                    y1: 0, y2: tinggiTotal,
                     class: 'gantt-grid',
                 }));
             }
 
             // garis pemisah antar baris tugas
             baris.forEach((b, i) => {
-                const y = TINGGI_KEPALA + (i + 1) * TINGGI_BARIS;
+                const y = (i + 1) * TINGGI_BARIS;
                 svg.appendChild(el('line', { x1: 0, x2: lebarTotal, y1: y, y2: y, class: 'gantt-grid' }));
             });
 
-            // header: baris bulan + batas bulan
-            let indeksBulan = 0;
-            let kursor = new Date(mulai.getFullYear(), mulai.getMonth(), 1);
-            while (kursor <= selesai) {
-                const bulanBerikut = new Date(kursor.getFullYear(), kursor.getMonth() + 1, 1);
-                const awal = kursor < mulai ? mulai : kursor;
-                const x = selisihHari(mulai, awal) * lebarHari;
-                const akhirSegmen = bulanBerikut > selesai ? tambahHari(selesai, 1) : bulanBerikut;
-                const lebarSegmen = selisihHari(awal, akhirSegmen) * lebarHari;
-
-                const label = NAMA_BULAN[kursor.getMonth()]
-                    + (indeksBulan === 0 ? ' ' + kursor.getFullYear() : '');
-                if (lebarSegmen > 26) {
-                    svg.appendChild(el('text', { x: x + 6, y: 15, class: 'gantt-bulan' }, label));
-                }
-                if (x > 0) {
-                    svg.appendChild(el('line', {
-                        x1: x, x2: x, y1: 0, y2: tinggiTotal, class: 'gantt-grid',
-                    }));
-                }
-
-                kursor = bulanBerikut;
-                indeksBulan++;
-            }
-
-            // header: tanggal (mode hari = tiap hari; mode minggu = tiap Senin)
-            for (let i = 0; i < totalHari; i++) {
-                const tgl = tambahHari(mulai, i);
-                if (lebarHari < 24 && tgl.getDay() !== 1) continue;
-                svg.appendChild(el('text', {
-                    x: i * lebarHari + lebarHari / 2,
-                    y: TINGGI_KEPALA - 7,
-                    class: 'gantt-teks',
-                    'text-anchor': 'middle',
-                }, String(tgl.getDate())));
-            }
-
-            // batas bawah header
-            svg.appendChild(el('line', {
-                x1: 0, x2: lebarTotal, y1: TINGGI_KEPALA, y2: TINGGI_KEPALA,
-                class: 'gantt-batas-kepala',
-            }));
-
             // batang tugas (induk = batang ringkasan lebih tipis)
             const posisiBatang = new Map(); // id → ujung kiri/kanan + y tengah baris
+            const labelSiap = [];           // label anggota, digambar setelah panah dependensi
             baris.forEach((baris_, i) => {
                 const t = baris_.tugas;
                 if (!t.start_date || !t.end_date) return;
@@ -301,7 +377,7 @@
                 const lebar = Math.max(hari * lebarHari - 4, 8);
                 const induk = punyaAnak.has(t.id);
                 const tinggiBatang = induk ? 10 : 16;
-                const y = TINGGI_KEPALA + i * TINGGI_BARIS + (TINGGI_BARIS - tinggiBatang) / 2;
+                const y = i * TINGGI_BARIS + (TINGGI_BARIS - tinggiBatang) / 2;
 
                 const grup = el('g', { class: 'gantt-batang' });
                 const batang = el('rect', {
@@ -314,13 +390,12 @@
                 posisiBatang.set(t.id, {
                     kiri: x1 + 2,
                     kanan: x1 + 2 + lebar,
-                    y: TINGGI_KEPALA + i * TINGGI_BARIS + TINGGI_BARIS / 2,
+                    y: i * TINGGI_BARIS + TINGGI_BARIS / 2,
                 });
 
-                // nama anggota singkat di samping kanan batang — tugas induk tanpa label;
-                // digambar di dalam grup batang (sebelum panah, z-order lebih bawah) sehingga
-                // tidak menimpa panah, dgn jarak 6px dari batang sendiri dan dipotong agar
-                // tidak melewati tepi timeline
+                // nama anggota singkat di samping kanan batang — tugas induk tanpa label,
+                // dipotong agar tidak melewati tepi timeline; digambar setelah panah dependensi
+                // dgn latar tipis supaya tidak tertimpa garis panah
                 const daftarAnggota = t.anggota || [];
                 if (!induk && daftarAnggota.length) {
                     const depan = (nama) => String(nama).trim().split(/\s+/)[0];
@@ -331,11 +406,11 @@
                     const ruang = lebarTotal - xLabel - 4; // sisa ruang s/d tepi timeline
                     const maksHuruf = Math.floor(ruang / 6); // lebar huruf rata2 ~6px @10px
                     if (ruang >= 12 && maksHuruf >= 1) {
-                        grup.appendChild(el('text', {
+                        labelSiap.push({
                             x: xLabel,
                             y: y + tinggiBatang / 2 + 3.5,
-                            class: 'gantt-label-anggota',
-                        }, potong(singkat, maksHuruf)));
+                            teks: potong(singkat, maksHuruf),
+                        });
                     }
                 }
 
@@ -368,15 +443,37 @@
                 }));
             });
 
-            // garis vertikal "hari ini"
+            // label nama anggota: di atas panah dependensi, dgn latar tipis agar
+            // garis panah tidak menimpa teks
+            labelSiap.forEach((lb) => {
+                svg.appendChild(el('rect', {
+                    x: lb.x - 3,
+                    y: lb.y - 9,
+                    width: lb.teks.length * 6 + 6,
+                    height: 12,
+                    rx: 3, ry: 3,
+                    class: 'gantt-label-anggota-latar',
+                }));
+                svg.appendChild(el('text', {
+                    x: lb.x, y: lb.y, class: 'gantt-label-anggota',
+                }, lb.teks));
+            });
+
+            // garis vertikal "hari ini" pada body (labelnya ada di header, digambar
+            // oleh gambarKepala agar tidak menimpa teks bulan/tanggal)
             const idxHariIni = selisihHari(mulai, hariIni);
             if (idxHariIni >= 0 && idxHariIni < totalHari) {
                 const x = idxHariIni * lebarHari + lebarHari / 2;
                 const grup = el('g', { class: 'gantt-hari-ini' });
                 grup.appendChild(el('line', { x1: x, x2: x, y1: 0, y2: tinggiTotal }));
-                grup.appendChild(el('text', { x: x + 5, y: 13, class: 'gantt-label-hari-ini' }, 'Hari ini'));
                 svg.appendChild(grup);
             }
+
+            // header bulan + tanggal (SVG terpisah, menempel saat scroll vertikal)
+            gambarKepala({
+                lebarTotal, mulai, selesai, totalHari,
+                weekendAktif, setWeekend, setLibur, hariIni,
+            });
 
             // daftar tugas di kiri, sejajar baris timeline
             daftar.textContent = '';
@@ -422,6 +519,11 @@
 
         document.querySelectorAll('[data-zoom]').forEach((tombol) => {
             tombol.addEventListener('click', () => setZoom(tombol.dataset.zoom));
+        });
+
+        // header tanggal ikut bergeser saat timeline digulir horizontal
+        ganttScroll.addEventListener('scroll', () => {
+            kepalaKanan.scrollLeft = ganttScroll.scrollLeft;
         });
 
         // ---------- ambil data lalu render ----------

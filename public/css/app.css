@@ -300,9 +300,23 @@ a:hover { color: var(--simpro-primary-hover); }
     flex: 0 0 280px;
     min-width: 280px;
     border-right: 1px solid var(--simpro-border);
-    overflow: hidden;
+    /* tanpa overflow: hidden — agar header kolom ini bisa position: sticky */
 }
+.gantt-kanan {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.gantt-kepala-kanan {
+    padding: 0;                   /* header kanan berisi SVG bulan + tanggal */
+    overflow: hidden;             /* sinkronisasi scroll horizontal via scrollLeft */
+}
+.gantt-kepala-kanan svg { display: block; }
 .gantt-kepala {
+    position: sticky;             /* menempel di atas saat halaman digulir vertikal */
+    top: var(--simpro-header-h);   /* tepat di bawah header halaman (juga sticky, z 1020) */
+    z-index: 15;
     height: 44px;                 /* disamakan dgn tinggi header SVG */
     display: flex;
     align-items: center;
@@ -344,7 +358,6 @@ a:hover { color: var(--simpro-primary-hover); }
 .gantt-bg { fill: var(--simpro-surface); }
 .gantt-libur { fill: var(--simpro-surface-2); }
 .gantt-grid { stroke: var(--simpro-border); stroke-width: 1; }
-.gantt-batas-kepala { stroke: var(--simpro-border); stroke-width: 2; }
 .gantt-teks { fill: var(--simpro-muted); font-size: 9px; font-family: 'Inter', system-ui, sans-serif; }
 .gantt-bulan { fill: var(--simpro-text); font-size: 11px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
 .gantt-batang rect { fill: var(--simpro-primary); }
@@ -361,6 +374,9 @@ a:hover { color: var(--simpro-primary-hover); }
     font-size: 10px;
     font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* latar tipis label anggota agar garis panah tidak menimpa teks (tahap 5B-2a) */
+.gantt-label-anggota-latar { fill: var(--simpro-surface); fill-opacity: .9; }
 
 /* legenda Gantt */
 .gantt-legenda-swatch {
