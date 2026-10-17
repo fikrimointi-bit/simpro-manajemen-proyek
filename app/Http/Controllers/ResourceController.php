@@ -7,7 +7,9 @@ use App\Models\Resource;
 use App\Models\ResourceDayOff;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -108,6 +110,14 @@ class ResourceController extends Controller
             'description' => 'keterangan',
         ]);
 
+        // tolak irisan dengan cuti lain milik anggota yang sama;
+        // unique di database tetap dipertahankan sebagai jaring pengaman
+        if ($this->rentangTabrak($resource, $data['date'], $data['end_date'])) {
+            throw ValidationException::withMessages([
+                'date' => 'Rentang tanggal bertabrakan dengan cuti lain anggota ini.',
+            ]);
+        }
+
         $resource->daysOff()->create([
             'project_id' => $project->id,
             'date' => $data['date'],
@@ -175,6 +185,36 @@ class ResourceController extends Controller
         $data['custom_fields'] = $data['custom_fields'] ?? [];
 
         return $data;
+    }
+
+    /**
+     * Apakah rentang cuti baru beririsan dengan cuti lain anggota ini?
+     *
+     * Irisan: cuti_lain.date <= sampai_baru DAN
+     * coalesce(cuti_lain.end_date, cuti_lain.date) >= dari_baru
+     * (end_date kosong dianggap sama dengan date-nya).
+     * Saat edit, kirim $cutiDiabaikan = id cuti yang sedang diedit
+     * (belum ada endpoint edit cuti — disiapkan untuk penyuntingan nanti).
+     */
+    private function rentangTabrak(Resource $resource, string $dari, string $sampai, ?int $cutiDiabaikan = null): bool
+    {
+        $mulai = Carbon::parse($dari)->toDateString();
+        $akhir = Carbon::parse($sampai)->toDateString();
+
+        foreach ($resource->daysOff()->get() as $cuti) {
+            if ($cutiDiabaikan !== null && $cuti->id === $cutiDiabaikan) {
+                continue;
+            }
+
+            $cutiDari = $cuti->date->toDateString();
+            $cutiSampai = ($cuti->end_date ?? $cuti->date)->toDateString();
+
+            if ($cutiDari <= $akhir && $cutiSampai >= $mulai) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Tolak akses anggota yang bukan milik proyek di URL. */

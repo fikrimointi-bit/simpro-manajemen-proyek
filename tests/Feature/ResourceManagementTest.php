@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\ResourceController;
 use App\Models\Project;
 use App\Models\Resource;
 use App\Models\ResourceDayOff;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReflectionMethod;
 use Tests\TestCase;
 
 /**
@@ -197,6 +199,114 @@ class ResourceManagementTest extends TestCase
         $this->delete(route('resource-days-off.destroy', [$proyek, $anggota, $cuti]))
             ->assertSessionHasNoErrors();
         $this->assertSame(1, ResourceDayOff::count());
+    }
+
+    public function test_cuti_irisan_sebagian_ditolak(): void
+    {
+        $proyek = $this->proyek();
+        $anggota = Resource::create([
+            'project_id' => $proyek->id,
+            'name' => 'Rina Marlina',
+        ]);
+
+        // cuti lama: 20–22 Oktober
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-10-20',
+            'end_date' => '2026-10-22',
+            'description' => 'Cuti lama',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(1, ResourceDayOff::count());
+
+        // irisan di tengah (21–23 masuk ke dalam 20–22) -> ditolak,
+        // pesan berbahasa Indonesia muncul di field date, data tidak berubah
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-10-21',
+            'end_date' => '2026-10-23',
+        ])
+            ->assertSessionHasErrors([
+                'date' => 'Rentang tanggal bertabrakan dengan cuti lain anggota ini.',
+            ]);
+        $this->assertSame(1, ResourceDayOff::count());
+
+        // irisan di batas: berakhir tepat pada hari mulai cuti lama -> ditolak
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-10-18',
+            'end_date' => '2026-10-20',
+        ])->assertSessionHasErrors('date');
+        $this->assertSame(1, ResourceDayOff::count());
+
+        // bersebelahan tapi tidak beririsan (mulai 23, cuti lama berakhir 22) -> lolos
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-10-23',
+            'end_date' => '2026-10-24',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(2, ResourceDayOff::count());
+
+        // cuti lama tanpa end_date: dianggap sama dengan date-nya (coalesce)
+        $anggota->daysOff()->create([
+            'project_id' => $proyek->id,
+            'date' => '2026-11-05',
+            'end_date' => null,
+        ]);
+        $this->assertSame(3, ResourceDayOff::count());
+
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-11-05',
+            'end_date' => '2026-11-06',
+        ])->assertSessionHasErrors('date');
+        $this->assertSame(3, ResourceDayOff::count());
+
+        // hari setelahnya (6–7 Nov) tidak menyentuh cuti 5 Nov -> lolos
+        $this->post(route('resource-days-off.store', [$proyek, $anggota]), [
+            'date' => '2026-11-06',
+            'end_date' => '2026-11-07',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(4, ResourceDayOff::count());
+    }
+
+    public function test_edit_cuti_tidak_bentrok_dengan_dirinya_sendiri(): void
+    {
+        // Saat ini belum ada endpoint edit cuti (hanya store & destroy), jadi
+        // aturan "abaikan cuti yang sedang diedit" diuji langsung dari controller
+        // lewat pemanggilan rentangTabrak dengan $cutiDiabaikan.
+        $proyek = $this->proyek();
+        $anggota = Resource::create([
+            'project_id' => $proyek->id,
+            'name' => 'Dewi Sartika',
+        ]);
+
+        $cuti = $anggota->daysOff()->create([
+            'project_id' => $proyek->id,
+            'date' => '2026-10-20',
+            'end_date' => '2026-10-22',
+        ]);
+
+        $cek = new ReflectionMethod(ResourceController::class, 'rentangTabrak');
+
+        // tanpa mengabaikan apa pun, rentang yang sama dianggap irisan
+        $this->assertTrue(
+            $cek->invoke(new ResourceController(), $anggota, '2026-10-21', '2026-10-22')
+        );
+
+        // saat edit: cuti yang sedang diedit diabaikan -> tidak dianggap bentrok
+        $this->assertFalse(
+            $cek->invoke(new ResourceController(), $anggota, '2026-10-21', '2026-10-22', $cuti->id)
+        );
+
+        // tetap dianggap irisan terhadap cuti anggota LAIN (bukan dirinya sendiri)
+        $anggotaLain = Resource::create([
+            'project_id' => $proyek->id,
+            'name' => 'Anggota Lain',
+        ]);
+        $anggotaLain->daysOff()->create([
+            'project_id' => $proyek->id,
+            'date' => '2026-10-21',
+            'end_date' => '2026-10-25',
+        ]);
+
+        $this->assertTrue(
+            $cek->invoke(new ResourceController(), $anggotaLain, '2026-10-20', '2026-10-21', $cuti->id)
+        );
     }
 
     public function test_hapus_anggota_mengikutsertakan_cuti_dan_penugasan(): void
