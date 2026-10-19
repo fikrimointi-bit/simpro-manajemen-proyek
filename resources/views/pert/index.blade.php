@@ -121,6 +121,78 @@
             svg.setAttribute('viewBox', `0 0 ${lebarTotal} ${tinggiTotal}`);
             while (svg.firstChild) svg.removeChild(svg.firstChild);
 
+            // posisi tiap node dihitung dulu (tanpa menggambar) agar panah bisa
+            // ditarik sebelum kotak — urutan SVG: panah dulu, kotak sesudahnya
+            const posisi = new Map(); // id → { kiri, kanan, yTengah }
+            layers.forEach((l, kolom) => {
+                const isi = perLayer.get(l);
+                const x = PADDING + kolom * (LEBAR_NODE + JEDA_X);
+                const y0 = PADDING + (tinggiTotal - PADDING * 2 - tinggiKolom(l)) / 2;
+
+                isi.forEach((n, i) => {
+                    const kapsul = n.id === 'mulai' || n.id === 'selesai';
+                    const w = kapsul ? LEBAR_KAPSUL : LEBAR_NODE;
+                    const h = kapsul ? TINGGI_KAPSUL : TINGGI_NODE;
+                    const nx = x + (LEBAR_NODE - w) / 2;
+                    const ny = y0 + i * (TINGGI_NODE + JEDA_Y) + (TINGGI_NODE - h) / 2;
+                    posisi.set(String(n.id), {
+                        kiri: nx, kanan: nx + w, yTengah: ny + h / 2,
+                    });
+                });
+            });
+
+            // kepala panah untuk seluruh edge
+            const defs = el('defs', {});
+            const kepalaPanah = el('marker', {
+                id: 'pert-panah-kepala',
+                markerUnits: 'userSpaceOnUse',
+                markerWidth: 7,
+                markerHeight: 7,
+                refX: 6,
+                refY: 3,
+                orient: 'auto',
+            });
+            kepalaPanah.appendChild(el('path', { d: 'M0,0 L6,3 L0,6 Z', class: 'pert-panah-kepala' }));
+            defs.appendChild(kepalaPanah);
+            svg.appendChild(defs);
+
+            // panah siku: tepi kanan node asal → tepi kiri node tujuan
+            // (digambar sebelum kotak agar tidak memotong kotak mana pun)
+            (data.edge || []).forEach((e) => {
+                const p = posisi.get(String(e.dari));
+                const s = posisi.get(String(e.ke));
+                if (!p || !s) return; // ujung tidak ada di diagram → tanpa panah
+
+                const xP = p.kanan;
+                const yP = p.yTengah;
+                const xS = s.kiri;
+                const yS = s.yTengah;
+                const siku = Math.round((xP + xS) / 2); // titik belok di tengah kolom
+
+                const grup = el('g', {
+                    class: 'pert-edge',
+                    'data-id': e.dari + '-' + e.ke,
+                });
+                grup.appendChild(el('path', {
+                    d: 'M ' + xP + ' ' + yP + ' H ' + siku + ' V ' + yS + ' H ' + xS,
+                    class: 'pert-panah',
+                    'marker-end': 'url(#pert-panah-kepala)',
+                }));
+
+                // label kecil tipe+delay (mis. "SS+1") hanya untuk edge selain FS
+                const tipe = String(e.tipe || 'FS').toUpperCase();
+                const delay = Number(e.delay) || 0;
+                if (tipe !== 'FS') {
+                    grup.appendChild(el('text', {
+                        x: siku + 4,
+                        y: (yP + yS) / 2 - 4,
+                        class: 'pert-panah-label',
+                    }, tipe + (delay > 0 ? '+' + delay : delay < 0 ? String(delay) : '')));
+                }
+
+                svg.appendChild(grup);
+            });
+
             layers.forEach((l, kolom) => {
                 const isi = perLayer.get(l);
                 const x = PADDING + kolom * (LEBAR_NODE + JEDA_X);

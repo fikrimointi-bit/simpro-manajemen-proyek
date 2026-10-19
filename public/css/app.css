@@ -415,6 +415,16 @@ a:hover { color: var(--simpro-primary-hover); }
     font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* panah siku antar node + kepala panah + label tipe (tahap 6B-2) */
+.pert-panah { fill: none; stroke: var(--simpro-muted); stroke-width: 1.5; }
+.pert-panah-kepala { fill: var(--simpro-muted); }
+.pert-panah-label {
+    fill: var(--simpro-muted);
+    font-size: 9px;
+    font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
 /* node Mulai / Selesai: kapsul lebih kecil, aksen utama */
 .pert-kapsul rect {
     fill: var(--simpro-primary-soft);
