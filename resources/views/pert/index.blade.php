@@ -115,18 +115,28 @@
                 `${tampil.x} ${tampil.y} ${vw / tampil.k} ${vh / tampil.k}`);
         }
 
-        // batasi geser: konten tak boleh keluar terlalu jauh; saat zoom keluar
-        // (viewport lebih lebar dari diagram) diagram dipusatkan
+        // batasi geser: saat zoom masuk (viewport lebih kecil dari diagram) geseran
+        // dibatasi tepi konten; saat diagram muat di layar tetap boleh digeser
+        // sedikit dalam ruang longgar 25% viewport (bukan dikunci pas di tengah)
         function batasi() {
             const { vw, vh } = viewport();
             const lebar = vw / tampil.k;
             const tinggi = vh / tampil.k;
-            tampil.x = lebar >= dunia.w
-                ? (dunia.w - lebar) / 2
-                : Math.min(0, Math.max(dunia.w - lebar, tampil.x));
-            tampil.y = tinggi >= dunia.h
-                ? (dunia.h - tinggi) / 2
-                : Math.min(0, Math.max(dunia.h - tinggi, tampil.y));
+            const longgar = Math.max(vw, vh) * 0.25;
+
+            if (lebar >= dunia.w) {
+                const pusat = (dunia.w - lebar) / 2;
+                tampil.x = Math.min(pusat + longgar, Math.max(pusat - longgar, tampil.x));
+            } else {
+                tampil.x = Math.min(0, Math.max(dunia.w - lebar, tampil.x));
+            }
+
+            if (tinggi >= dunia.h) {
+                const pusat = (dunia.h - tinggi) / 2;
+                tampil.y = Math.min(pusat + longgar, Math.max(pusat - longgar, tampil.y));
+            } else {
+                tampil.y = Math.min(0, Math.max(dunia.h - tinggi, tampil.y));
+            }
         }
 
         // muat di layar: skala maksimal yang memuat seluruh diagram (maks 1x)
@@ -317,14 +327,17 @@
         }
 
         // ---------- drag geser (mouse / sentuh) ----------
+        // dipasang di WADAH (mencakup area kosong di luar svg juga) + window
+        // untuk move/up, sehingga geser tetap jalan walau kursor keluar wadah
         let geser = null;
-        svg.addEventListener('pointerdown', (e) => {
-            if (!dunia.w || e.button !== 0) return;
+        wadah.addEventListener('pointerdown', (e) => {
+            if (!dunia.w || (e.button !== undefined && e.button !== 0)) return;
+            e.preventDefault(); // cegah seleksi teks / gestur bawaan browser
             geser = { x: e.clientX, y: e.clientY };
-            svg.setPointerCapture(e.pointerId);
+            wadah.setPointerCapture(e.pointerId);
             wadah.classList.add('pert-menggeser');
         });
-        svg.addEventListener('pointermove', (e) => {
+        window.addEventListener('pointermove', (e) => {
             if (!geser) return;
             tampil.x -= (e.clientX - geser.x) / tampil.k;
             tampil.y -= (e.clientY - geser.y) / tampil.k;
@@ -336,12 +349,12 @@
             if (!geser) return;
             geser = null;
             wadah.classList.remove('pert-menggeser');
-            if (e.pointerId !== undefined && svg.hasPointerCapture(e.pointerId)) {
-                svg.releasePointerCapture(e.pointerId);
+            if (e.pointerId !== undefined && wadah.hasPointerCapture(e.pointerId)) {
+                wadah.releasePointerCapture(e.pointerId);
             }
         };
-        svg.addEventListener('pointerup', berhentiGeser);
-        svg.addEventListener('pointercancel', berhentiGeser);
+        window.addEventListener('pointerup', berhentiGeser);
+        window.addEventListener('pointercancel', berhentiGeser);
 
         // ---------- zoom scroll mouse (pusat di bawah kursor) ----------
         svg.addEventListener('wheel', (e) => {
