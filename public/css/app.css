@@ -393,6 +393,41 @@ a:hover { color: var(--simpro-primary-hover); }
     border-radius: 3px; background: var(--simpro-primary); vertical-align: 1px; margin-right: .35rem;
 }
 
+/* ---------- Diagram PERT (tahap 6B) ---------- */
+.pert-scroll { overflow-x: auto; padding: 1.5rem; }
+.pert-scroll svg { display: block; }
+
+/* warna node memakai token desain (otomatis ikut mode gelap) */
+.pert-node rect {
+    fill: var(--simpro-surface);
+    stroke: var(--simpro-border);
+    stroke-width: 1;
+}
+.pert-nama {
+    fill: var(--simpro-text);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+.pert-detail {
+    fill: var(--simpro-muted);
+    font-size: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* node Mulai / Selesai: kapsul lebih kecil, aksen utama */
+.pert-kapsul rect {
+    fill: var(--simpro-primary-soft);
+    stroke: var(--simpro-primary);
+    stroke-width: 1;
+}
+.pert-kapsul-teks {
+    fill: var(--simpro-primary);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
 /* ---------- Utilitas ---------- */
 .text-muted-simpro { color: var(--simpro-muted) !important; }
 .bg-success { background-color: var(--simpro-success) !important; }

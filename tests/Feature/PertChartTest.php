@@ -180,7 +180,9 @@ class PertChartTest extends TestCase
         $this->get(route('projects.pert.index', $proyek))
             ->assertStatus(200)
             ->assertSee('Diagram PERT')
-            ->assertSee('Diagram akan tampil di sini');
+            ->assertSee('pert-svg')      // wadah SVG diagram (diisi JS)
+            // kotak node digambar dari JSON ini di sisi klien
+            ->assertSee(route('projects.pert.data', $proyek), false);
 
         $this->get(route('projects.pert.data', $proyek))
             ->assertStatus(200)
