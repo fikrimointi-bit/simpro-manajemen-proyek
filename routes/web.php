@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GanttController;
 use App\Http\Controllers\HolidayController;
+use App\Http\Controllers\PertController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\TaskController;
@@ -44,3 +45,7 @@ Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])
     ->name('projects.gantt.index');
 Route::get('/projects/{project}/gantt/data', [GanttController::class, 'data'])
     ->name('projects.gantt.data');
+
+// Diagram PERT gaya Activity-on-Node (tahap 6A): endpoint JSON dulu
+Route::get('/projects/{project}/pert/data', [PertController::class, 'data'])
+    ->name('projects.pert.data');
