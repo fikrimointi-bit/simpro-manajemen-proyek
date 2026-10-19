@@ -394,8 +394,19 @@ a:hover { color: var(--simpro-primary-hover); }
 }
 
 /* ---------- Diagram PERT (tahap 6B) ---------- */
-.pert-scroll { overflow-x: auto; padding: 1.5rem; }
-.pert-scroll svg { display: block; }
+/* wadah diagram: tinggi terbatas agar muat di layar, digeser via drag (tahap 6C) */
+.pert-scroll {
+    height: min(72vh, 680px);
+    min-height: 360px;
+    padding: 1rem;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;          /* gestur sentuh jadi geser diagram, bukan scroll halaman */
+    user-select: none;
+}
+.pert-scroll.pert-menggeser { cursor: grabbing; }
+/* SVG mengisi penuh wadah — skala render 1:1 dgn viewBox, diatur JS (tahap 6C) */
+.pert-scroll svg { display: block; width: 100%; height: 100%; }
 
 /* warna node memakai token desain (otomatis ikut mode gelap) */
 .pert-node rect {

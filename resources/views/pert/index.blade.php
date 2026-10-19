@@ -28,10 +28,26 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <strong><i class="bi bi-diagram-3 me-1"></i> Diagram PERT (Activity-on-Node)</strong>
-            <a href="{{ route('projects.pert.data', $project) }}" class="btn btn-sm btn-outline-secondary"
-               target="_blank" rel="noopener">
-                <i class="bi bi-code-slash me-1"></i> Lihat JSON
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group" role="group" aria-label="Kontrol tampilan diagram">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            id="pert-zoom-out" aria-label="Perkecil diagram" title="Perkecil">
+                        <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            id="pert-zoom-in" aria-label="Perbesar diagram" title="Perbesar">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            id="pert-reset" title="Kembalikan tampilan seperti awal">
+                        <i class="bi bi-arrows-fullscreen me-1"></i> Reset tampilan
+                    </button>
+                </div>
+                <a href="{{ route('projects.pert.data', $project) }}" class="btn btn-sm btn-outline-secondary"
+                   target="_blank" rel="noopener">
+                    <i class="bi bi-code-slash me-1"></i> Lihat JSON
+                </a>
+            </div>
         </div>
 
         {{-- status memuat data JSON --}}
@@ -43,7 +59,7 @@
 
         {{-- kotak diagram: node per layer, di-scroll bila lebar --}}
         <div id="pert-kotak" class="d-none">
-            <div class="pert-scroll">
+            <div class="pert-scroll" id="pert-scroll">
                 <svg id="pert-svg" xmlns="http://www.w3.org/2000/svg"
                      role="img" aria-label="Diagram PERT"></svg>
             </div>
@@ -79,6 +95,61 @@
         const blokKosong = document.getElementById('pert-kosong');
         const kotak = document.getElementById('pert-kotak');
         const svg = document.getElementById('pert-svg');
+        const wadah = document.getElementById('pert-scroll');
+
+        // ---------- kontrol tampilan: drag geser + zoom scroll/tombol (tahap 6C) ----------
+        // viewBox = posisi (x,y) + skala k dalam satuan koordinat diagram,
+        // jadi kotak & panah yang sudah digambar tidak perlu diubah sama sekali
+        const tampil = { x: 0, y: 0, k: 1 };
+        const dunia = { w: 0, h: 0 }; // ukuran konten dalam satuan diagram
+
+        function viewport() {
+            const r = svg.getBoundingClientRect();
+            return { vw: Math.max(r.width, 1), vh: Math.max(r.height, 1) };
+        }
+
+        function terapkan() {
+            if (!dunia.w) return;
+            const { vw, vh } = viewport();
+            svg.setAttribute('viewBox',
+                `${tampil.x} ${tampil.y} ${vw / tampil.k} ${vh / tampil.k}`);
+        }
+
+        // batasi geser: konten tak boleh keluar terlalu jauh; saat zoom keluar
+        // (viewport lebih lebar dari diagram) diagram dipusatkan
+        function batasi() {
+            const { vw, vh } = viewport();
+            const lebar = vw / tampil.k;
+            const tinggi = vh / tampil.k;
+            tampil.x = lebar >= dunia.w
+                ? (dunia.w - lebar) / 2
+                : Math.min(0, Math.max(dunia.w - lebar, tampil.x));
+            tampil.y = tinggi >= dunia.h
+                ? (dunia.h - tinggi) / 2
+                : Math.min(0, Math.max(dunia.h - tinggi, tampil.y));
+        }
+
+        // muat di layar: skala maksimal yang memuat seluruh diagram (maks 1x)
+        function muatLayar() {
+            if (!dunia.w) return;
+            const { vw, vh } = viewport();
+            tampil.k = Math.min(1, (vw * 0.96) / dunia.w, (vh * 0.96) / dunia.h);
+            tampil.x = (dunia.w - vw / tampil.k) / 2;
+            tampil.y = (dunia.h - vh / tampil.k) / 2;
+            terapkan();
+        }
+
+        // zoom di titik piksel (px,py) di dalam svg — pusat titik di bawah kursor
+        function zoom(px, py, faktor) {
+            if (!dunia.w) return;
+            const wx = tampil.x + px / tampil.k;
+            const wy = tampil.y + py / tampil.k;
+            tampil.k = Math.min(4, Math.max(0.2, tampil.k * faktor));
+            tampil.x = wx - px / tampil.k;
+            tampil.y = wy - py / tampil.k;
+            batasi();
+            terapkan();
+        }
 
         function el(tag, attr, teks) {
             const node = document.createElementNS(SVG_NS, tag);
@@ -238,7 +309,64 @@
                     svg.appendChild(grup);
                 });
             });
+
+            // ukuran konten diketahui → tampilan awal muat di layar
+            dunia.w = lebarTotal;
+            dunia.h = tinggiTotal;
+            muatLayar();
         }
+
+        // ---------- drag geser (mouse / sentuh) ----------
+        let geser = null;
+        svg.addEventListener('pointerdown', (e) => {
+            if (!dunia.w || e.button !== 0) return;
+            geser = { x: e.clientX, y: e.clientY };
+            svg.setPointerCapture(e.pointerId);
+            wadah.classList.add('pert-menggeser');
+        });
+        svg.addEventListener('pointermove', (e) => {
+            if (!geser) return;
+            tampil.x -= (e.clientX - geser.x) / tampil.k;
+            tampil.y -= (e.clientY - geser.y) / tampil.k;
+            geser = { x: e.clientX, y: e.clientY };
+            batasi();
+            terapkan();
+        });
+        const berhentiGeser = (e) => {
+            if (!geser) return;
+            geser = null;
+            wadah.classList.remove('pert-menggeser');
+            if (e.pointerId !== undefined && svg.hasPointerCapture(e.pointerId)) {
+                svg.releasePointerCapture(e.pointerId);
+            }
+        };
+        svg.addEventListener('pointerup', berhentiGeser);
+        svg.addEventListener('pointercancel', berhentiGeser);
+
+        // ---------- zoom scroll mouse (pusat di bawah kursor) ----------
+        svg.addEventListener('wheel', (e) => {
+            if (!dunia.w) return;
+            e.preventDefault();
+            const r = svg.getBoundingClientRect();
+            zoom(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+        }, { passive: false });
+
+        // ---------- tombol + / − (zoom di tengah layar) & reset ----------
+        document.getElementById('pert-zoom-in').addEventListener('click', () => {
+            const { vw, vh } = viewport();
+            zoom(vw / 2, vh / 2, 1.25);
+        });
+        document.getElementById('pert-zoom-out').addEventListener('click', () => {
+            const { vw, vh } = viewport();
+            zoom(vw / 2, vh / 2, 1 / 1.25);
+        });
+        document.getElementById('pert-reset').addEventListener('click', muatLayar);
+
+        // viewport berubah (resize jendela) → viewBox disesuaikan, diagram tetap pas
+        window.addEventListener('resize', () => {
+            batasi();
+            terapkan();
+        });
 
         // ---------- ambil data lalu render ----------
         fetch(URL_DATA)
