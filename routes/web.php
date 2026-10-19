@@ -46,6 +46,8 @@ Route::get('/projects/{project}/gantt', [GanttController::class, 'index'])
 Route::get('/projects/{project}/gantt/data', [GanttController::class, 'data'])
     ->name('projects.gantt.data');
 
-// Diagram PERT gaya Activity-on-Node (tahap 6A): endpoint JSON dulu
+// Diagram PERT gaya Activity-on-Node (tahap 6A): halaman + endpoint JSON-nya
+Route::get('/projects/{project}/pert', [PertController::class, 'index'])
+    ->name('projects.pert.index');
 Route::get('/projects/{project}/pert/data', [PertController::class, 'data'])
     ->name('projects.pert.data');

@@ -76,6 +76,18 @@
                     </a>
                 @endforeach
             @endif
+            {{-- Sub-menu Diagram PERT: satu tautan per proyek (seperti Gantt, tahap 6A) --}}
+            <div class="nav-section">Diagram PERT</div>
+            @if (($menuPert ?? collect())->isEmpty())
+                <div class="px-3 small text-muted-simpro">Belum ada proyek</div>
+            @else
+                @foreach ($menuPert as $proyekPert)
+                    <a class="nav-link-simpro @if (request()->routeIs('projects.pert.*') && request()->route('project')?->id === $proyekPert->id) active @endif"
+                       href="{{ route('projects.pert.index', $proyekPert) }}">
+                        <i class="bi bi-diagram-3"></i> {{ $proyekPert->name }}
+                    </a>
+                @endforeach
+            @endif
         </nav>
 
         <div class="position-absolute bottom-0 start-0 end-0 px-4 py-3 text-muted-simpro small border-top">

@@ -11,6 +11,9 @@
     <a href="{{ route('projects.gantt.index', $project) }}" class="btn btn-outline-secondary">
         <i class="bi bi-bar-chart-steps me-1"></i> Gantt Chart
     </a>
+    <a href="{{ route('projects.pert.index', $project) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-diagram-3 me-1"></i> Diagram PERT
+    </a>
     <a href="{{ route('projects.edit', $project) }}" class="btn btn-primary">
         <i class="bi bi-pencil me-1"></i> Edit Proyek
     </a>

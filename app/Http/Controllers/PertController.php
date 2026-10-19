@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskDependency;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 /**
  * PERT gaya Activity-on-Node (tahap 6A).
@@ -19,6 +20,14 @@ use Illuminate\Http\JsonResponse;
  */
 class PertController extends Controller
 {
+    /** Halaman PERT: kerangka judul + area diagram (diisi pada tahap berikutnya). */
+    public function index(Project $project): View
+    {
+        return view('pert.index', [
+            'project' => $project,
+        ]);
+    }
+
     /** Endpoint JSON diagram PERT untuk sebuah proyek. */
     public function data(Project $project): JsonResponse
     {
