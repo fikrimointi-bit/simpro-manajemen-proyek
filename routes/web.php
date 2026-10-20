@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CriticalPathController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GanttController;
 use App\Http\Controllers\HolidayController;
@@ -51,3 +52,7 @@ Route::get('/projects/{project}/pert', [PertController::class, 'index'])
     ->name('projects.pert.index');
 Route::get('/projects/{project}/pert/data', [PertController::class, 'data'])
     ->name('projects.pert.data');
+
+// Jalur kritis (tahap 7B): halaman analisis CPM per proyek
+Route::get('/projects/{project}/jalur-kritis', [CriticalPathController::class, 'index'])
+    ->name('projects.kritis.index');

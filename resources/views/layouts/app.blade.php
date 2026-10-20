@@ -88,6 +88,19 @@
                     </a>
                 @endforeach
             @endif
+
+            {{-- Sub-menu Jalur Kritis: satu tautan per proyek (tahap 7B) --}}
+            <div class="nav-section">Jalur Kritis</div>
+            @if (($menuKritis ?? collect())->isEmpty())
+                <div class="px-3 small text-muted-simpro">Belum ada proyek</div>
+            @else
+                @foreach ($menuKritis as $proyekKritis)
+                    <a class="nav-link-simpro @if (request()->routeIs('projects.kritis.*') && request()->route('project')?->id === $proyekKritis->id) active @endif"
+                       href="{{ route('projects.kritis.index', $proyekKritis) }}">
+                        <i class="bi bi-signpost-split"></i> {{ $proyekKritis->name }}
+                    </a>
+                @endforeach
+            @endif
         </nav>
 
         <div class="position-absolute bottom-0 start-0 end-0 px-4 py-3 text-muted-simpro small border-top">

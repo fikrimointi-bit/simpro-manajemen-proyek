@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->setLocale('id');
 
         // submenu sidebar per proyek: "Sumber Daya" (tahap 4A), "Gantt Chart" (5A),
-        // & "Diagram PERT" (6A)
+        // "Diagram PERT" (6A) & "Jalur Kritis" (7B)
         View::composer('layouts.app', function ($view): void {
             $proyekMenu = Project::orderBy('name')->get(['id', 'name']);
 
@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
                 'menuSumberDaya' => $proyekMenu,
                 'menuGantt' => $proyekMenu,
                 'menuPert' => $proyekMenu,
+                'menuKritis' => $proyekMenu,
             ]);
         });
     }

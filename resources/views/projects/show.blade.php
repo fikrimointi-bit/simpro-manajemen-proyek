@@ -14,6 +14,9 @@
     <a href="{{ route('projects.pert.index', $project) }}" class="btn btn-outline-secondary">
         <i class="bi bi-diagram-3 me-1"></i> Diagram PERT
     </a>
+    <a href="{{ route('projects.kritis.index', $project) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-signpost-split me-1"></i> Jalur Kritis
+    </a>
     <a href="{{ route('projects.edit', $project) }}" class="btn btn-primary">
         <i class="bi bi-pencil me-1"></i> Edit Proyek
     </a>
