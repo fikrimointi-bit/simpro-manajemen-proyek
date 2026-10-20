@@ -29,6 +29,10 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <strong><i class="bi bi-diagram-3 me-1"></i> Diagram PERT (Activity-on-Node)</strong>
             <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        id="pert-kritis" aria-pressed="false" title="Sorot jalur kritis">
+                    <i class="bi bi-exclamation-octagon me-1"></i> Tampilkan jalur kritis
+                </button>
                 <div class="btn-group" role="group" aria-label="Kontrol tampilan diagram">
                     <button type="button" class="btn btn-sm btn-outline-secondary"
                             id="pert-zoom-out" aria-label="Perkecil diagram" title="Perkecil">
@@ -176,6 +180,11 @@
                 return;
             }
 
+            // id tugas kritis + pasangan edge antar tugas kritis (tahap 7B-2)
+            const setKritis = new Set((data.tugas_kritis || []).map(String));
+            const setEdgeKritis = new Set(
+                (data.edge_kritis || []).map((e) => String(e.dari) + '-' + String(e.ke)));
+
             // kelompokkan node per layer (kolom), lalu urutkan per kolom berdasarkan id
             const perLayer = new Map();
             node.forEach((n) => {
@@ -235,6 +244,19 @@
             });
             kepalaPanah.appendChild(el('path', { d: 'M0,0 L6,3 L0,6 Z', class: 'pert-panah-kepala' }));
             defs.appendChild(kepalaPanah);
+
+            // marker khusus utk edge jalur kritis (dipilih via marker-end saat mode aktif)
+            const kepalaKritis = el('marker', {
+                id: 'pert-panah-kepala-kritis',
+                markerUnits: 'userSpaceOnUse',
+                markerWidth: 7,
+                markerHeight: 7,
+                refX: 6,
+                refY: 3,
+                orient: 'auto',
+            });
+            kepalaKritis.appendChild(el('path', { d: 'M0,0 L6,3 L0,6 Z', class: 'pert-panah-kepala-kritis' }));
+            defs.appendChild(kepalaKritis);
             svg.appendChild(defs);
 
             // panah siku: tepi kanan node asal → tepi kiri node tujuan
@@ -250,14 +272,19 @@
                 const yS = s.yTengah;
                 const siku = Math.round((xP + xS) / 2); // titik belok di tengah kolom
 
+                const idEdge = String(e.dari) + '-' + String(e.ke);
+                const edgeKritis = setEdgeKritis.has(idEdge);
+
                 const grup = el('g', {
-                    class: 'pert-edge',
+                    class: 'pert-edge' + (edgeKritis ? ' pert-edge-kritis' : ''),
                     'data-id': e.dari + '-' + e.ke,
                 });
                 grup.appendChild(el('path', {
                     d: 'M ' + xP + ' ' + yP + ' H ' + siku + ' V ' + yS + ' H ' + xS,
                     class: 'pert-panah',
-                    'marker-end': 'url(#pert-panah-kepala)',
+                    'marker-end': edgeKritis
+                        ? 'url(#pert-panah-kepala-kritis)'
+                        : 'url(#pert-panah-kepala)',
                 }));
 
                 // label kecil tipe+delay (mis. "SS+1") hanya untuk edge selain FS
@@ -288,7 +315,8 @@
                     const ny = y0 + i * (TINGGI_NODE + JEDA_Y) + (TINGGI_NODE - h) / 2;
 
                     const grup = el('g', {
-                        class: kapsul ? 'pert-node pert-kapsul' : 'pert-node',
+                        class: (kapsul ? 'pert-node pert-kapsul' : 'pert-node')
+                            + (setKritis.has(String(n.id)) ? ' pert-node-kritis' : ''),
                         'data-id': n.id,
                         transform: `translate(${nx}, ${ny})`,
                     });
@@ -374,6 +402,16 @@
             zoom(vw / 2, vh / 2, 1 / 1.25);
         });
         document.getElementById('pert-reset').addEventListener('click', muatLayar);
+
+        // ---------- toggle mode jalur kritis: sorot kotak & panah kritis merah ----------
+        // kelas 'kritis' sudah menempel di node/edge saat render;
+        // toggle hanya menyalakan kelas mode pada SVG (posisi tidak berubah)
+        document.getElementById('pert-kritis').addEventListener('click', function () {
+            const aktif = svg.classList.toggle('pert-mode-kritis');
+            this.classList.toggle('btn-danger', aktif);
+            this.classList.toggle('btn-outline-danger', !aktif);
+            this.setAttribute('aria-pressed', String(aktif));
+        });
 
         // viewport berubah (resize jendela) → viewBox disesuaikan, diagram tetap pas
         window.addEventListener('resize', () => {

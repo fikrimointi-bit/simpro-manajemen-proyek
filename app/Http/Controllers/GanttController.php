@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Resource;
 use App\Models\Task;
 use App\Models\TaskDependency;
+use App\Services\CriticalPathService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -24,8 +25,8 @@ class GanttController extends Controller
         ]);
     }
 
-    /** Endpoint JSON: tugas, dependensi, weekend, dan hari libur (termasuk berulang). */
-    public function data(Project $project): JsonResponse
+    /** Endpoint JSON: tugas, dependensi, weekend, hari libur, & id tugas kritis. */
+    public function data(Project $project, CriticalPathService $jalurKritis): JsonResponse
     {
         $tugas = $project->tasks()
             ->with('resources:id,name,color')
@@ -79,6 +80,8 @@ class GanttController extends Controller
             'tugas' => $tugas,
             'dependensi' => $dependensi,
             'hari_libur' => $hariLibur,
+            // id tugas jalur kritis (tahap 7B) — disorot lewat tombol di halaman Gantt
+            'tugas_kritis' => $jalurKritis->hitung($project)['tugas_kritis'],
         ]);
     }
 }

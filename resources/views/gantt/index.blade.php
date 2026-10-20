@@ -25,9 +25,15 @@
     <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <strong><i class="bi bi-bar-chart-steps me-1"></i> Timeline Proyek</strong>
-            <div class="btn-group" role="group" aria-label="Zoom timeline">
-                <button type="button" class="btn btn-sm btn-primary" id="zoomHari" data-zoom="hari">Hari</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="zoomMinggu" data-zoom="minggu">Minggu</button>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        id="ganttKritis" aria-pressed="false" title="Sorot tugas jalur kritis">
+                    <i class="bi bi-exclamation-octagon me-1"></i> Tampilkan jalur kritis
+                </button>
+                <div class="btn-group" role="group" aria-label="Zoom timeline">
+                    <button type="button" class="btn btn-sm btn-primary" id="zoomHari" data-zoom="hari">Hari</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="zoomMinggu" data-zoom="minggu">Minggu</button>
+                </div>
             </div>
         </div>
 
@@ -277,6 +283,8 @@
 
             const weekendAktif = data.weekend_mode !== 'work';
             const setWeekend = new Set((data.weekend_days || []).map(Number));
+            // id tugas jalur kritis (tahap 7B-2) — menandai batang saat digambar
+            const setKritis = new Set((data.tugas_kritis || []).map(Number));
             const hariIni = new Date();
             hariIni.setHours(0, 0, 0, 0);
 
@@ -379,7 +387,10 @@
                 const tinggiBatang = induk ? 10 : 16;
                 const y = i * TINGGI_BARIS + (TINGGI_BARIS - tinggiBatang) / 2;
 
-                const grup = el('g', { class: 'gantt-batang' });
+                const grup = el('g', {
+                    class: 'gantt-batang' + (setKritis.has(t.id) ? ' gantt-kritis' : ''),
+                    'data-id': t.id,
+                });
                 const batang = el('rect', {
                     x: x1 + 2, y: y, width: lebar, height: tinggiBatang,
                     rx: tinggiBatang / 2, ry: tinggiBatang / 2,
@@ -519,6 +530,16 @@
 
         document.querySelectorAll('[data-zoom]').forEach((tombol) => {
             tombol.addEventListener('click', () => setZoom(tombol.dataset.zoom));
+        });
+
+        // ---------- toggle mode jalur kritis: sorot batang merah ----------
+        // kelas 'gantt-kritis' sudah menempel pada batang kritis saat render;
+        // toggle hanya menyalakan kelas mode pada SVG (posisi batang tak berubah)
+        document.getElementById('ganttKritis').addEventListener('click', function () {
+            const aktif = svg.classList.toggle('gantt-mode-kritis');
+            this.classList.toggle('btn-danger', aktif);
+            this.classList.toggle('btn-outline-danger', !aktif);
+            this.setAttribute('aria-pressed', String(aktif));
         });
 
         // header tanggal ikut bergeser saat timeline digulir horizontal

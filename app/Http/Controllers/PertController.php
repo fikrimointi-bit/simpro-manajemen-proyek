@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskDependency;
+use App\Services\CriticalPathService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -29,7 +30,7 @@ class PertController extends Controller
     }
 
     /** Endpoint JSON diagram PERT untuk sebuah proyek. */
-    public function data(Project $project): JsonResponse
+    public function data(Project $project, CriticalPathService $jalurKritis): JsonResponse
     {
         $semuaTugas = $project->tasks()->orderBy('id')->get();
         $anakPerInduk = $semuaTugas->groupBy(fn (Task $t) => $t->parent_id);
@@ -134,6 +135,20 @@ class PertController extends Controller
             }
         }
 
+        // --- jalur kritis (tahap 7B): id kritis + edge antar tugas kritis ---
+        $jalurKritisAnalisis = $jalurKritis->hitung($project);
+
+        $edgeKritis = [];
+        foreach ($jalurKritisAnalisis['jalur_kritis'] as $jalur) {
+            $rute = $jalur['rute'];
+            for ($i = 0; $i < count($rute) - 1; $i++) {
+                $pasangan = ['dari' => $rute[$i], 'ke' => $rute[$i + 1]];
+                if (! in_array($pasangan, $edgeKritis, true)) {
+                    $edgeKritis[] = $pasangan;
+                }
+            }
+        }
+
         return response()->json([
             'proyek' => [
                 'id' => $project->id,
@@ -141,6 +156,10 @@ class PertController extends Controller
             ],
             'node' => $node,
             'edge' => $edge,
+            // analisis jalur kritis (tahap 7B): id tugas kritis + edge antar
+            // tugas kritis (pasangan berurutan pada jalur kritis, unik)
+            'tugas_kritis' => $jalurKritisAnalisis['tugas_kritis'],
+            'edge_kritis' => $edgeKritis,
         ]);
     }
 }

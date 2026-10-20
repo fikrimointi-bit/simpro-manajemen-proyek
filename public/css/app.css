@@ -361,6 +361,10 @@ a:hover { color: var(--simpro-primary-hover); }
 .gantt-teks { fill: var(--simpro-muted); font-size: 9px; font-family: 'Inter', system-ui, sans-serif; }
 .gantt-bulan { fill: var(--simpro-text); font-size: 11px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
 .gantt-batang rect { fill: var(--simpro-primary); }
+
+/* mode jalur kritis (tahap 7B-2): batang kritis merah, sisanya redup */
+.gantt-mode-kritis .gantt-batang:not(.gantt-kritis) { opacity: .3; }
+.gantt-mode-kritis .gantt-batang.gantt-kritis rect { fill: var(--simpro-danger) !important; } /* penting: kalahkan inline style warna tugas */
 .gantt-hari-ini line { stroke: var(--simpro-danger); stroke-width: 2; }
 .gantt-label-hari-ini { fill: var(--simpro-danger); font-size: 10px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
 
@@ -448,6 +452,19 @@ a:hover { color: var(--simpro-primary-hover); }
     font-weight: 600;
     font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* mode jalur kritis PERT (tahap 7B-2): sorot kotak & panah kritis merah */
+.pert-mode-kritis .pert-node:not(.pert-node-kritis):not(.pert-kapsul) { opacity: .3; }
+.pert-mode-kritis .pert-node-kritis rect {
+    stroke: var(--simpro-danger);
+    stroke-width: 2;
+    fill: color-mix(in srgb, var(--simpro-danger) 12%, var(--simpro-surface));
+}
+.pert-mode-kritis .pert-edge:not(.pert-edge-kritis) { opacity: .25; }
+.pert-mode-kritis .pert-edge-kritis path { stroke: var(--simpro-danger); stroke-width: 2.5; }
+.pert-panah-kepala-kritis { fill: var(--simpro-muted); }          /* mrk dipakai hanya utk edge kritis */
+.pert-mode-kritis .pert-panah-kepala-kritis { fill: var(--simpro-danger); }
+.pert-mode-kritis .pert-edge-kritis .pert-panah-label { fill: var(--simpro-danger); }
 
 /* ---------- Utilitas ---------- */
 .text-muted-simpro { color: var(--simpro-muted) !important; }
