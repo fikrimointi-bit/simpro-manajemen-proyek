@@ -195,6 +195,13 @@ Aturan (semua perhitungan hari kerja lewat CalendarService, tanggal inklusif):
 - Gaji ditampilkan terformat Rupiah (`Rp 3.500.000`) di tabel & detail;
   `SchedulerService`/`CalendarService` tidak disentuh — cuti anggota belum
   memengaruhi penjadwalan (alokasi ke tugas menyusul).
+- **Jalur kritis (tahap 7A, `CriticalPathService::hitung`)**: SEMUA tipe
+  dependensi (FS/SS/FF/SF) **diperlakukan sebagai FS** untuk perhitungan
+  jalur kritis, dan delay (`lag_days`) diabaikan — hanya durasi hari kerja
+  (`duration`) yang dihitung (forward pass ES/EF, backward pass LS/LF,
+  float = LS − ES, kritis = float 0; jalur terpanjang = jalur kritis).
+  Keputusan ini berlaku khusus analisis jalur kritis, BUKAN mengubah
+  penjadwalan `SchedulerService` yang tetap membedakan tipe dependensi.
 
 ## Rencana UI bertahap
 
