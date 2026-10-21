@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/app.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('css/app.css') }}?v=3" rel="stylesheet">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
     {{-- ============ Sidebar (geser di layar kecil) ============ --}}
     <aside class="offcanvas offcanvas-start app-sidebar" tabindex="-1" id="sidebarSimpro"
            aria-labelledby="sidebarLabel">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center flex-shrink-0">
             <a class="brand-simpro" href="{{ route('dashboard') }}" id="sidebarLabel">
                 <span class="brand-mark"><i class="bi bi-bar-chart-line-fill"></i></span>
                 SIMPRO
@@ -36,7 +36,7 @@
             <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" aria-label="Tutup"></button>
         </div>
 
-        <nav class="mt-2">
+        <nav class="app-sidebar-nav mt-2">
             <div class="nav-section">Menu</div>
             <a class="nav-link-simpro @if (request()->routeIs('dashboard')) active @endif"
                href="{{ route('dashboard') }}">
@@ -103,7 +103,7 @@
             @endif
         </nav>
 
-        <div class="position-absolute bottom-0 start-0 end-0 px-4 py-3 text-muted-simpro small border-top">
+        <div class="app-sidebar-footer px-4 py-3 text-muted-simpro small border-top">
             <i class="bi bi-kanban"></i> SIMPRO v1.0 — tugas kuliah
         </div>
     </aside>

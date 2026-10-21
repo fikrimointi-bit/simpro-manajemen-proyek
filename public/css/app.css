@@ -54,12 +54,39 @@ a { color: var(--simpro-primary); }
 a:hover { color: var(--simpro-primary-hover); }
 
 /* ---------- Layout: sidebar + main ---------- */
+/* sidebar = kolom flex setinggi layar: logo di atas, menu menggulir, footer di bawah */
 .app-sidebar {
     width: var(--simpro-sidebar-w);
     background: var(--simpro-surface);
     border-right: 1px solid var(--simpro-border);
     padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;      /* fallback browser lama */
+    height: 100dvh;     /* tinggi viewport nyata (browser mobile) */
+    overflow: hidden;   /* hanya area menu (.app-sidebar-nav) yang menggulir */
 }
+
+/* area menu: satu-satunya bagian sidebar yang boleh menggulir */
+.app-sidebar-nav {
+    flex: 1 1 auto;     /* mengisi ruang di antara logo dan footer */
+    min-height: 0;      /* wajib agar flex item boleh menyusut & scroll */
+    overflow-y: auto;
+    /* scrollbar tipis yang ikut mode gelap (token warna) */
+    scrollbar-width: thin;                                     /* Firefox */
+    scrollbar-color: color-mix(in srgb, var(--simpro-muted) 45%, transparent) transparent;
+}
+.app-sidebar-nav::-webkit-scrollbar { width: 6px; }            /* Chrome/Edge: tipis */
+.app-sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.app-sidebar-nav::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--simpro-muted) 45%, transparent);
+    border-radius: 999px;
+}
+.app-sidebar-nav::-webkit-scrollbar-thumb:hover { background: var(--simpro-muted); }
+
+/* footer sidebar: menempel di bawah kolom flex — tanpa position absolute,
+   sehingga tidak pernah menimpa menu */
+.app-sidebar-footer { flex-shrink: 0; }
 
 .app-sidebar .brand-simpro {
     display: flex;
@@ -120,9 +147,11 @@ a:hover { color: var(--simpro-primary-hover); }
 @media (min-width: 992px) {
     .offcanvas.offcanvas-start {
         position: fixed;
+        top: 0;             /* jangkar ke tepi atas viewport */
         transform: none;
         visibility: visible;
-        height: 100vh;
+        height: 100vh;      /* fallback browser lama */
+        height: 100dvh;
         width: var(--simpro-sidebar-w) !important;
         z-index: 1030;
     }
