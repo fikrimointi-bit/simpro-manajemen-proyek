@@ -188,7 +188,32 @@ a:hover { color: var(--simpro-primary-hover); }
     font-size: .85rem;
 }
 
-.app-content { padding: 1.5rem; max-width: 1200px; }
+/* konten fluid: mengisi lebar area utama di samping sidebar (maks 1920px),
+   padding nyaman di semua lebar layar */
+.app-content {
+    padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
+    max-width: 1920px;
+    margin-inline: auto;   /* di layar ultra-lebar, sisi kiri-kanan seimbang */
+}
+
+/* halaman form (Tambah/Edit Proyek, Tugas, Anggota): tetap ramping & terpusat
+   — row justify-content-center di view sudah menengahkan, di sini dibatasi maks 900px */
+.app-content .row.justify-content-center > .col-lg-9 {
+    max-width: 900px;
+}
+
+/* grid kartu proyek (beranda): auto-fill, minimal 320px per kartu —
+   kolomnya hanya ada di grid ini, statistik atas tetap flex Bootstrap */
+.app-content .row.g-3:has(> .col-md-6.col-xl-4) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 1rem;
+}
+.app-content .row.g-3:has(> .col-md-6.col-xl-4) > .col-md-6.col-xl-4 {
+    width: auto;         /* lebar diatur grid, bukan persentase kolom Bootstrap */
+    padding-top: 0;      /* jarak antar kartu sepenuhnya diatur gap */
+    padding-bottom: 0;
+}
 
 /* ---------- Kartu ---------- */
 .card {
