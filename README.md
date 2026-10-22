@@ -137,6 +137,6 @@ php artisan test --filter=PageAccessTest         # smoke test seluruh halaman
 | | |
 | --- | --- |
 | **Nama** | Moh Nur Chairul Fikri Mointi |
-| **NIM** | `[NIM]` |
-| **Mata Kuliah** | `[Mata Kuliah]` |
-| **Dosen Pengampu** | `[Dosen Pengampu]` |
+| **NIM** | 531424022 |
+| **Mata Kuliah** | ARSITEKTUR SISTEM INFORMASI |
+| **Dosen Pengampu** | Dr. Mohammad Syafri Tuloli, ST., MT. |
