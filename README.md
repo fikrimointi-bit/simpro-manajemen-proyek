@@ -80,8 +80,8 @@ Buka `http://127.0.0.1:8000` di browser.
 Perintah `php artisan migrate --seed` membuat dua proyek contoh yang siap
 dipakai langsung:
 
-1. **Contoh SDLC** — proyek mulai Selasa, 30 Juni 2015 (weekend Sabtu–Minggu
-   libur, satu hari libur 17 Juli 2015) berisi 6 tugas berantai
+1. **Contoh SDLC** — proyek mulai Selasa, 30 Oktober 2026 (weekend Sabtu–Minggu
+   libur, satu hari libur 17 Oktober 2026) berisi 6 tugas berantai
    (Analisis Kebutuhan → Analisis Sistem → Perancangan → Implementasi →
    Pengujian → Deployment) dengan campuran dependensi `SS+3`, `SS+5`, dan
    `FS+0`, serta 7 anggota tim (PM, analis, programmer, tester) yang sudah
