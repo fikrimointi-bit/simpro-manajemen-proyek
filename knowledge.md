@@ -203,6 +203,27 @@ Aturan (semua perhitungan hari kerja lewat CalendarService, tanggal inklusif):
   Keputusan ini berlaku khusus analisis jalur kritis, BUKAN mengubah
   penjadwalan `SchedulerService` yang tetap membedakan tipe dependensi.
 
+### Dokumentasi & kebersihan repo (tahap 8C)
+
+- **Dibuat: `README.md`** — dokumentasi berbahasa Indonesia: judul "SIMPRO -
+  Sistem Manajemen Proyek", deskripsi singkat, daftar fitur (proyek + kalender
+  kerja & hari libur, tugas/sub-tugas, dependensi FS/SS/FF/SF + delay, sumber
+  daya + penugasan + cuti, Gantt Chart, PERT Chart, analisis jalur kritis),
+  teknologi (Laravel, SQLite, Blade, Bootstrap 5, SVG/JavaScript), bagian
+  "Tampilan Aplikasi" dengan tiga gambar (`docs/screenshots/gantt.png`,
+  `docs/screenshots/pert.png`, `docs/screenshots/jalur-kritis.png` — hanya
+  dirujuk, file gambar TIDAK dibuat), LANGKAH INSTALASI (clone → composer
+  install → copy .env → key:generate → buat database.sqlite → migrate --seed →
+  serve), cara memakai dua proyek contoh seeder (Contoh SDLC, Contoh Jalur
+  Kritis), cara menjalankan tes (`php artisan test`), catatan keputusan desain
+  (jalur kritis memperlakukan semua dependensi sebagai Finish-to-Start), dan
+  identitas pembuat Moh Nur Chairul Fikri Mointi (NIM/mata kuliah placeholder).
+- **Diubah: `.gitignore`** — menambahkan `database/database.sqlite` (entry
+  `.env`, `vendor`, `node_modules` sudah ada sebelumnya).
+- **Diubah: `knowledge.md`** — bagian ini sendiri.
+- Tidak ada kode aplikasi atau tes yang diubah, dan tidak ada file gambar
+  yang dibuat/diubah pada tahap ini.
+
 ## Rencana UI bertahap
 
 1. ✅ Proyek (CRUD), pengaturan weekend, hari libur proyek.

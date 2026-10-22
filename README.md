@@ -1,58 +1,142 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SIMPRO - Sistem Manajemen Proyek
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SIMPRO adalah aplikasi web manajemen proyek sederhana untuk tugas kuliah,
+terinspirasi GanttProject. Aplikasi ini memungkinkan kita membuat proyek,
+mengatur kalender kerja (weekend dan hari libur), menyusun tugas dan sub-tugas
+berjenjang, mendefinisikan dependensi antar tugas, mengalokasikan sumber daya
+(anggota tim) beserta cutinya, lalu memvisualisasikannya melalui **Gantt Chart**,
+**PERT Chart**, dan **analisis jalur kritis**.
 
-## About Laravel
+## Daftar Fitur
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Proyek dan kalender kerja dengan hari libur** — CRUD proyek, pengaturan
+  hari weekend (per hari, dengan mode `no_work`/`work`), serta hari libur
+  sekali pakai maupun berulang tiap tahun.
+- **Tugas dan sub-tugas** — struktur WBS berjenjang (induk → anak), durasi dalam
+  hari kerja, prioritas, warna, milestone, progress, dan rollup jadwal otomatis
+  ke tugas induk.
+- **Dependensi FS/SS/FF/SF dengan delay** — ketergantungan antar tugas dengan
+  tipe Finish-to-Start, Start-to-Start, Finish-to-Finish, dan Start-to-Finish,
+  lengkap dengan delay (lag) hari kerja; penjadwalan ulang otomatis dan
+  penolakan siklus dependensi.
+- **Sumber daya dan penugasan dengan cuti** — CRUD anggota tim (kapasitas,
+  gaji, data kustom), cuti/sakit berrentang (tanggal mulai–selesai), serta
+  alokasi anggota ke tugas.
+- **Gantt Chart** — bar jadwal per tugas (termasuk milestone), zoom
+  Hari/Minggu/Bulan, mode "Muat layar", dan panah dependensi.
+- **PERT Chart** — visualisasi jaringan aktivitas berbentuk SVG.
+- **Analisis jalur kritis** — forward/backward pass (ES/EF/LS/LF), total float,
+  dan penandaan jalur kritis (jalur terpanjang) di Gantt Chart.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Teknologi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Laravel** — framework PHP (routing, Eloquent ORM, migration, seeder, testing)
+- **SQLite** — basis data file-based tanpa server
+- **Blade** — templating engine bawaan Laravel
+- **Bootstrap 5** — framework CSS via CDN
+- **SVG/JavaScript** — rendering Gantt Chart, PERT Chart, dan panah dependensi
+  langsung di sisi klien tanpa library eksternal
 
-## Learning Laravel
+## Tampilan Aplikasi
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+![Gantt Chart](docs/screenshots/gantt.png)
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+![PERT Chart](docs/screenshots/pert.png)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+![Jalur Kritis](docs/screenshots/jalur-kritis.png)
 
-## Agentic Development
+## LANGKAH INSTALASI
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Pastikan Git, PHP 8.3+, dan Composer terpasang, lalu jalankan berurutan:
 
 ```bash
-composer require laravel/boost --dev
+# 1. Salin repositori
+git clone <url-repositori> simpro
+cd simpro
 
-php artisan boost:install
+# 2. Pasang dependensi PHP
+composer install
+
+# 3. Siapkan file environment
+cp .env.example .env
+
+# 4. Buat application key
+php artisan key:generate
+
+# 5. Buat file database kosong
+touch database/database.sqlite
+
+# 6. Buat tabel + isi data contoh (2 proyek dari seeder)
+php artisan migrate --seed
+
+# 7. Jalankan server pengembangan
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Buka `http://127.0.0.1:8000` di browser.
 
-## Contributing
+## Cara Memakai Dua Proyek Contoh dari Seeder
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Perintah `php artisan migrate --seed` membuat dua proyek contoh yang siap
+dipakai langsung:
 
-## Code of Conduct
+1. **Contoh SDLC** — proyek mulai Selasa, 30 Juni 2015 (weekend Sabtu–Minggu
+   libur, satu hari libur 17 Juli 2015) berisi 6 tugas berantai
+   (Analisis Kebutuhan → Analisis Sistem → Perancangan → Implementasi →
+   Pengujian → Deployment) dengan campuran dependensi `SS+3`, `SS+5`, dan
+   `FS+0`, serta 7 anggota tim (PM, analis, programmer, tester) yang sudah
+   ditugaskan ke tugasnya masing-masing.
+2. **Contoh Jalur Kritis** — proyek mulai Senin, 5 Oktober 2026 berisi graf
+   tugas A–J (semua dependensi `FS` delay 0, total 33 hari kerja) yang
+   dirancang untuk mendemonstrasikan analisis jalur kritis (jalur kritis
+   B-E-H-J).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Cara memakainya:
 
-## Security Vulnerabilities
+1. Dari beranda, klik salah satu proyek contoh.
+2. Buka **Kelola Tugas** untuk melihat struktur tugas, jadwal hasil
+   penjadwalan dependensi, dan kolom predecessor (mis. `Analisis Kebutuhan (SS+3)`).
+3. Buka **Gantt Chart** untuk melihat bar jadwal, panah dependensi, dan
+   tombol **Jalur Kritis** yang menandai jalur terpanjang.
+4. Buka **PERT Chart** untuk melihat jaringan aktivitas.
+5. Buka **Sumber Daya** untuk melihat anggota tim, cuti, dan penugasan
+   (khusus proyek Contoh SDLC).
+6. Seeding aman dijalankan ulang — bagian yang datanya sudah ada akan
+   dilewati tanpa duplikat.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Cara Menjalankan Tes
 
-## License
+```bash
+php artisan test
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Atau per modul, misalnya:
+
+```bash
+php artisan test --filter=CalendarServiceTest   # logika kalender kerja
+php artisan test --filter=SchedulerServiceTest  # mesin penjadwalan dependensi
+php artisan test --filter=PageAccessTest         # smoke test seluruh halaman
+```
+
+## Catatan Keputusan Desain
+
+- **Analisis jalur kritis memperlakukan semua dependensi sebagai
+  Finish-to-Start.** `CriticalPathService` menghitung ES/EF/LS/LF dan float
+  dengan asumsi semua dependensi bertipe FS, dan delay (`lag_days`) tidak
+  ikut dihitung — hanya durasi hari kerja tugas. Keputusan ini berlaku
+  **khusus** analisis jalur kritis; penjadwalan `SchedulerService` tetap
+  membedakan tipe FS/SS/FF/SF beserta delay sesuai aturan GanttProject.
+- Penamaan kolom database lama (`predecessor_id`, `successor_id`,
+  `lag_days`, `holidays.date`) dipertahankan agar tidak menambah migration
+  baru.
+- Seluruh perhitungan hari kerja lewat `CalendarService` (libur proyek →
+  weekend → mode weekend), sehingga Gantt, PERT, dan jalur kritis satu suara.
+
+## Identitas Pembuat
+
+| | |
+| --- | --- |
+| **Nama** | Moh Nur Chairul Fikri Mointi |
+| **NIM** | `[NIM]` |
+| **Mata Kuliah** | `[Mata Kuliah]` |
+| **Dosen Pengampu** | `[Dosen Pengampu]` |
